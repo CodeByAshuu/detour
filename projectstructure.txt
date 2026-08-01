@@ -1,0 +1,262 @@
+# SmartRoute — Project Structure & Dependencies
+
+## 1. Folder Structure (Monorepo)
+
+```
+smartroute/
+├── ProjectInfo.txt
+├── docker-compose.yml
+├── docker-compose.dev.yml
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── deploy.yml
+├── nginx/
+│   └── nginx.conf
+│
+├── client/                          # React frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── api/                     # axios instances, API calls per service
+│   │   ├── assets/
+│   │   ├── components/
+│   │   │   ├── common/              # Button, Modal, Loader, etc.
+│   │   │   ├── map/                 # Leaflet map, route polylines, markers
+│   │   │   ├── dashboard/           # Admin/Dispatcher/Agent dashboard widgets
+│   │   │   └── charts/              # Recharts components for analytics
+│   │   ├── context/                 # Auth context / role context
+│   │   ├── hooks/                   # useSocket, useAuth, useFetch
+│   │   ├── pages/
+│   │   │   ├── Login.jsx
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── DispatcherDashboard.jsx
+│   │   │   └── AgentView.jsx
+│   │   ├── store/                   # Redux Toolkit or Zustand store
+│   │   ├── utils/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── package.json
+│   └── vite.config.js
+│
+├── server/
+│   ├── auth-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   ├── models/              # User.js
+│   │   │   ├── routes/
+│   │   │   ├── middleware/          # verifyToken, checkRole
+│   │   │   ├── config/              # db.js
+│   │   │   └── app.js
+│   │   ├── tests/
+│   │   ├── .env.example
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   │
+│   ├── core-service/
+│   │   ├── src/
+│   │   │   ├── controllers/         # order.controller.js, agent.controller.js, zone.controller.js
+│   │   │   ├── models/              # Order.js, Agent.js, Zone.js
+│   │   │   ├── routes/
+│   │   │   ├── services/
+│   │   │   │   ├── assignment.service.js   # Min-Heap agent assignment
+│   │   │   │   └── clustering.service.js   # Union-Find zone clustering
+│   │   │   ├── algorithms/
+│   │   │   │   ├── unionFind.js
+│   │   │   │   └── minHeap.js
+│   │   │   ├── sockets/             # socket.io handlers
+│   │   │   ├── middleware/
+│   │   │   ├── config/
+│   │   │   └── app.js
+│   │   ├── tests/
+│   │   │   ├── unionFind.test.js
+│   │   │   └── assignment.test.js
+│   │   ├── .env.example
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   │
+│   └── routing-service/
+│       ├── src/
+│       │   ├── controllers/
+│       │   ├── routes/
+│       │   ├── algorithms/
+│       │   │   ├── dijkstra.js
+│       │   │   ├── astar.js
+│       │   │   ├── heldKarpTSP.js
+│       │   │   └── slidingWindowSLA.js
+│       │   ├── graph/
+│       │   │   └── buildGraph.js    # constructs adjacency list from delivery points
+│       │   ├── queue/
+│       │   │   ├── bullQueue.js     # BullMQ producer
+│       │   │   └── worker.js        # BullMQ consumer/worker process
+│       │   ├── config/
+│       │   └── app.js
+│       ├── tests/
+│       │   ├── dijkstra.test.js
+│       │   ├── astar.test.js
+│       │   ├── heldKarpTSP.test.js
+│       │   └── slidingWindowSLA.test.js
+│       ├── .env.example
+│       ├── Dockerfile
+│       └── package.json
+│
+├── shared/                          # optional: shared types/constants across services
+│   └── constants.js
+│
+└── README.md
+```
+
+---
+
+## 2. What to Install — Per Folder
+
+### `client/` (React frontend)
+
+```bash
+npm create vite@latest client -- --template react
+cd client
+
+# Core
+npm install react-router-dom axios socket.io-client
+
+# State management (pick ONE)
+npm install @reduxjs/toolkit react-redux
+# OR
+npm install zustand
+
+# Map
+npm install leaflet react-leaflet
+
+# Charts
+npm install recharts
+
+# Styling
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+# Testing
+npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom
+```
+
+---
+
+### `server/auth-service/`
+
+```bash
+mkdir auth-service && cd auth-service
+npm init -y
+
+# Core
+npm install express mongoose bcryptjs jsonwebtoken cors dotenv helmet
+npm install express-rate-limit          # basic brute-force protection on login
+
+# Dev
+npm install -D nodemon
+
+# Testing
+npm install -D jest supertest
+```
+
+---
+
+### `server/core-service/`
+
+```bash
+mkdir core-service && cd core-service
+npm init -y
+
+# Core
+npm install express mongoose cors dotenv helmet
+npm install socket.io                   # live updates
+npm install jsonwebtoken                # to verify tokens issued by auth-service
+
+# Dev
+npm install -D nodemon
+
+# Testing
+npm install -D jest supertest
+```
+
+*No external package needed for Union-Find or Min-Heap — you implement these yourself in `src/algorithms/`. That's the point.*
+
+---
+
+### `server/routing-service/`
+
+```bash
+mkdir routing-service && cd routing-service
+npm init -y
+
+# Core
+npm install express cors dotenv helmet
+npm install ioredis bullmq              # job queue for heavy route computations
+
+# Dev
+npm install -D nodemon
+
+# Testing
+npm install -D jest supertest
+```
+
+*Dijkstra, A*, Held-Karp, sliding window — all self-implemented in `src/algorithms/`. Do not install a graph/pathfinding library; that would defeat the purpose of the DSA showcase.*
+
+---
+
+## 3. Infrastructure — Nothing to "npm install," but needs setup
+
+| Tool | How you get it | Where it's configured |
+|---|---|---|
+| **MongoDB Atlas** | Free account at mongodb.com/atlas, create free M0 cluster | Connection string in each service's `.env` |
+| **Redis** | Free local via Docker (`redis:alpine` image), or Upstash free tier for cloud | `REDIS_URL` in `routing-service/.env` |
+| **Docker & Docker Compose** | Install Docker Desktop (free) | `docker-compose.yml` at root |
+| **Nginx** | Pulled as Docker image (`nginx:alpine`) — no local install needed | `nginx/nginx.conf` |
+| **GitHub Actions** | Free, built into GitHub — no install | `.github/workflows/*.yml` |
+| **Jenkins** (optional) | Run via Docker (`jenkins/jenkins:lts` image) — no local install needed | Jenkinsfile at root (add later) |
+
+---
+
+## 4. Root-level files
+
+```bash
+# At project root
+touch docker-compose.yml
+touch .gitignore
+```
+
+**`.gitignore`** (root, and mirror relevant lines in each service too):
+```
+node_modules/
+.env
+dist/
+build/
+*.log
+.DS_Store
+```
+
+---
+
+## 5. Quick sanity check after setup
+
+Once every `npm install` above is done, you should be able to run, in 4 separate terminals (or via `docker-compose up` once Dockerfiles exist):
+
+```bash
+cd client && npm run dev
+cd server/auth-service && npm run dev
+cd server/core-service && npm run dev
+cd server/routing-service && npm run dev
+```
+
+...with each service hitting its own port (suggested: client `5173`, auth `5001`, core `5002`, routing `5003`) and a shared MongoDB Atlas connection string across the two Node services that need it (`auth-service`, `core-service`).
+
+---
+
+## 6. What NOT to install
+
+To keep the DSA showcase honest, avoid these even though they'd make life easier:
+- `graphlib` / `ngraph` (graph libraries with built-in Dijkstra) — you write Dijkstra yourself
+- `heap-js` / `js-priority-queue` — you write the Min-Heap yourself
+- Any TSP-solver npm package — you write Held-Karp yourself
+- Google Maps SDK or any paid routing API
+
+Everything else (Express, Mongoose, Socket.io, JWT, BullMQ, Leaflet) is legitimate infrastructure — using libraries for plumbing is normal; the algorithms are what you're being evaluated on.

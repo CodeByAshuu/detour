@@ -1,0 +1,236 @@
+# Detour — Intelligent Delivery Logistics & Route Optimization Platform
+
+**A MERN + DSA + DevOps Capstone Project**
+
+---
+
+## 1. Project Description
+
+Detour is a full-stack logistics management platform that solves a real operational problem faced by every delivery/courier company: **given a set of orders and a fleet of delivery agents, how do you assign orders to agents and compute the most efficient delivery routes — in real time, at scale?**
+
+Unlike a typical CRUD "delivery tracking app," Detour implements the actual optimization logic itself: agent-order assignment, shortest-path routing, multi-stop route sequencing, and dynamic zone clustering, all built from scratch on top of graph theory and classical algorithms rather than delegated to a third-party black box.
+
+The platform has three user roles:
+- **Admin** — manages agents, zones, and views system-wide analytics
+- **Dispatcher/Manager** — creates orders, triggers assignment/optimization, monitors SLA breaches
+- **Delivery Agent** — views assigned route, updates delivery status (simulated live location)
+
+---
+
+## 2. Core Modules & Functional Breakdown
+
+### Module 1: Order Management
+- Create/update/cancel delivery orders (pickup point, drop point, time window, priority)
+- Order status lifecycle: `PENDING → ASSIGNED → IN_TRANSIT → DELIVERED / FAILED`
+
+### Module 2: Agent Management
+- CRUD for delivery agents (current location, capacity, shift status)
+- Agent availability tracking
+
+### Module 3: Zone Clustering Engine
+- Dynamically groups delivery points into geographic zones/clusters so agents are assigned nearby orders instead of scattered ones
+- **DSA used: Union-Find (Disjoint Set Union)** with path compression + union by rank, to cluster delivery points based on proximity threshold
+
+### Module 4: Order Assignment Engine
+- Matches pending orders to available agents based on zone, capacity, and current load
+- **DSA used: Min-Heap / Priority Queue** to always pick the least-loaded / nearest agent first
+
+### Module 5: Route Computation Engine (the heart of the project)
+- Builds a graph of delivery points (nodes) and road connections (edges, weighted by distance/time)
+- Computes shortest path between depot and each delivery point
+- **DSA used: Dijkstra's Algorithm** (and optionally **A\*** with a heuristic for faster point-to-point queries)
+- For agents with multiple stops, computes the optimal visiting order (mini Traveling Salesman Problem)
+- **DSA used: Dynamic Programming (Held-Karp algorithm)**, bounded to ≤10-12 stops per agent to keep it computationally feasible
+
+### Module 6: SLA & Performance Monitor
+- Tracks delivery time per order against promised time window, flags breaches
+- Computes rolling average delivery time over the last N orders
+- **DSA used: Sliding Window** technique on a queue/deque of recent deliveries
+
+### Module 7: Live Tracking (simulated)
+- Agent location updates pushed via WebSockets, animated on the map in real time
+- Route replay and ETA recalculation
+
+### Module 8: Admin Analytics Dashboard
+- Charts: orders/day, average delivery time, SLA breach %, agent utilization
+- Zone-wise heatmap of order density
+
+### Module 9: Authentication & Authorization
+- JWT-based auth, role-based access control (Admin/Dispatcher/Agent)
+
+---
+
+## 3. DSA Topics Used (Summary Table)
+
+| # | DSA Concept | Where It's Used | Why It's Needed |
+|---|---|---|---|
+| 1 | Graphs + Dijkstra's Algorithm | Route Computation Engine | Shortest path from depot to each delivery point |
+| 2 | Priority Queue (Min-Heap) | Dijkstra internals + Agent Assignment | Efficiently picks next-closest node / least-loaded agent |
+| 3 | Dynamic Programming (Held-Karp / TSP) | Multi-stop route sequencing | Optimal visiting order for an agent's assigned stops |
+| 4 | Union-Find (Disjoint Set Union) | Zone Clustering Engine | Groups nearby delivery points into zones efficiently |
+| 5 | Sliding Window | SLA Monitor | Rolling average delivery time / breach detection |
+| 6 (bonus) | A\* Search | Route Computation (optimization) | Faster than Dijkstra for single point-to-point queries using heuristic |
+| 7 (bonus) | Trie | Address/location search-autocomplete | Fast prefix search over saved addresses |
+
+---
+
+## 4. System Architecture
+
+```
+                              ┌─────────────────────────┐
+                              │        CLIENT (React)    │
+                              │  Admin / Dispatcher /     │
+                              │  Agent Dashboards         │
+                              │  Leaflet Map + Socket.io  │
+                              └────────────┬─────────────┘
+                                           │ REST + WebSocket
+                              ┌────────────▼─────────────┐
+                              │     API GATEWAY (Nginx)   │
+                              └────────────┬─────────────┘
+                                           │
+                 ┌─────────────────────────┼─────────────────────────┐
+                 │                         │                         │
+      ┌──────────▼──────────┐   ┌──────────▼──────────┐   ┌─────────▼─────────┐
+      │  Auth Service       │   │  Core API Service   │   │  Routing Engine   │
+      │  (Node/Express)     │   │  (Node/Express)     │   │  Service          │
+      │  JWT, RBAC          │   │  Orders, Agents,    │   │  (Node/Express)   │
+      │                     │   │  Zones CRUD         │   │  Dijkstra, A*,    │
+      │                     │   │                     │   │  DP-TSP, Union-Find │
+      └──────────┬──────────┘   └──────────┬─────────┘   └─────────┬──────────┘
+                 │                          │                            │
+                 └──────────────┬───────────┴────────────┬───────────────┘
+                                │                        │
+                       ┌─────────▼─────────┐   ┌──────────▼──────────┐
+                       │   MongoDB Atlas   │   │   Redis (cache +    │
+                       │   (Orders, Agents,│   │   BullMQ job queue  │
+                       │   Zones, Users)   │   │   for async route   │
+                       │                   │   │   computation)      │
+                       └───────────────────┘   └─────────────────────┘
+
+                       ┌──────────────────────────────────────────┐
+                       │        Socket.io server (live updates)    │
+                       │  Broadcasts agent location + order status │
+                       └────────────────────────────────────────────┘
+```
+
+**Design notes:**
+- The Routing Engine is deliberately a **separate service** from the core CRUD API — this is your "shows system design maturity" decision. Route computation is CPU-heavy; isolating it means it can be scaled independently and queued (via Redis/BullMQ) instead of blocking the main API thread.
+- Nginx sits in front as reverse proxy / load balancer — useful talking point for the DevOps section.
+- Socket.io handles real-time agent-location broadcast to subscribed dashboards.
+
+---
+
+## 5. Tech Stack
+
+| Layer | Technology | Notes |
+|---|---|---|
+| Frontend | React + Vite, TailwindCSS, Leaflet.js, Redux Toolkit or Zustand | Leaflet + OpenStreetMap tiles — free |
+| Backend | Node.js, Express.js | REST APIs, 3 services (auth/core/routing) |
+| Real-time | Socket.io | Live agent tracking |
+| Database | MongoDB (Atlas free tier) | Geospatial indexes (`2dsphere`) for location queries |
+| Cache/Queue | Redis + BullMQ | Async job queue for heavy route computations |
+| Auth | JWT + bcrypt | Role-based access control |
+| Testing | Jest, Supertest (backend), React Testing Library (frontend) | Integrated into CI |
+| Containerization | Docker, Docker Compose | Separate containers per service |
+| CI/CD | GitHub Actions | Lint → Test → Build → Dockerize → Push → Deploy |
+| Optional 2nd pipeline | Jenkins | Staging → Production promotion (shows dual-tool familiarity) |
+| Deployment | Render / Railway (backend + DB), Vercel (frontend) | Free tiers |
+| Monitoring | Prometheus + Grafana (basic), or simple health-check + Winston logging | Optional but strong add |
+| Reverse Proxy | Nginx | Container, routes traffic between services |
+
+**All free / open-source** — no paid tools required, as discussed earlier.
+
+---
+
+## 6. Working Flow (End-to-End)
+
+1. **Dispatcher creates orders** with pickup/drop coordinates and delivery windows via React dashboard.
+2. **Core API** stores orders in MongoDB with geospatial indexing.
+3. **Zone Clustering Engine** runs Union-Find periodically (or on-demand) to group unassigned orders into geographic clusters.
+4. **Assignment Engine** uses a Min-Heap to pick the best available agent per cluster based on load/proximity.
+5. Dispatcher triggers **"Optimize Routes"** → request goes to the Routing Engine service (queued via BullMQ if load is high).
+6. Routing Engine:
+   - Builds a weighted graph of relevant nodes (depot + assigned delivery points)
+   - Runs **Dijkstra/A\*** for pairwise shortest distances
+   - Runs **DP (Held-Karp)** to determine optimal stop order for each agent (bounded to ≤12 stops)
+   - Returns the ordered route + total distance/time
+7. Route is pushed to the **Agent's dashboard**, and simulated live movement begins, broadcast via **Socket.io**.
+8. As orders are marked delivered, the **SLA Monitor** updates a sliding window of recent delivery times and flags breaches on the Admin dashboard.
+9. Admin analytics dashboard aggregates all this into charts (orders/day, SLA %, agent utilization, zone heatmap).
+
+---
+
+## 7. Project Roadmap / Execution Plan
+
+### Phase 0 — Setup (Day 1)
+- Initialize monorepo (or 3 repos): `client/`, `server/` (with `auth-service`, `core-service`, `routing-service`), shared `types/`
+- Set up MongoDB Atlas cluster, Redis instance
+- Basic Express boilerplate for all 3 services + health-check endpoints
+- Docker Compose file wiring all services together locally
+
+### Phase 1 — Core Data Layer (Day 2-3)
+- Mongoose schemas: `User`, `Agent`, `Order`, `Zone`
+- Auth service: register/login, JWT issuance, RBAC middleware
+- Core CRUD APIs for Orders and Agents
+- Basic React shell: login, role-based routing, dashboard skeletons
+
+### Phase 2 — DSA Core: Zone Clustering + Assignment (Day 4-5)
+- Implement Union-Find for clustering delivery points by distance threshold
+- Implement Min-Heap-based agent assignment logic
+- Unit tests for both (this is important — testable algorithm code is a strong signal)
+
+### Phase 3 — DSA Core: Routing Engine (Day 6-8)
+- Build graph representation (adjacency list) from delivery points
+- Implement Dijkstra's algorithm from scratch
+- Implement A\* with Haversine-distance heuristic
+- Implement Held-Karp DP for multi-stop TSP (bounded N)
+- Expose as internal API endpoints, queue heavy jobs via BullMQ
+
+### Phase 4 — SLA Monitor (Day 9)
+- Sliding window implementation over delivery timestamps
+- Breach detection + alert flagging
+
+### Phase 5 — Frontend Integration (Day 10-12)
+- Leaflet map integration: depot, agents, delivery points, route polylines
+- Socket.io client: live agent movement simulation
+- Admin analytics dashboard (Recharts/Chart.js)
+- Dispatcher UI: create orders, trigger optimization, view assignment results
+- Agent UI: view assigned route, mark deliveries complete
+
+### Phase 6 — Testing (Day 13)
+- Backend: Jest unit tests for all DSA modules + Supertest for API endpoints
+- Frontend: React Testing Library for key components
+- Aim for meaningful coverage on the algorithm modules specifically — that's what you'll be asked about
+
+### Phase 7 — Dockerization (Day 14)
+- Dockerfile per service (multi-stage builds for smaller images)
+- `docker-compose.yml` for full local stack (client, 3 services, MongoDB, Redis, Nginx)
+
+### Phase 8 — CI/CD Pipeline (Day 15-16)
+- **GitHub Actions**: on PR → lint + test; on merge to `main` → build Docker images → push to Docker Hub/GHCR → deploy to Render/Railway
+- **Jenkins** (optional, for dual-tool demonstration): staging deploy on merge to `develop`, manual promotion to production pipeline
+
+### Phase 9 — Deployment & Monitoring (Day 17)
+- Deploy frontend to Vercel, backend services to Render/Railway
+- Basic health-check monitoring, structured logging (Winston)
+- Optional: Prometheus + Grafana dashboard for request latency/error rates
+
+### Phase 10 — Documentation (Day 18)
+- README with architecture diagram, setup instructions, DSA-concept-to-code mapping table
+- API documentation (Postman collection or Swagger)
+- Record a short demo video/GIF
+
+**Total realistic timeline: ~2.5-3.5 weeks** working steadily, not full-time — which is normal and expected for a capstone of this depth. Treat the earlier "2-3 day" version as your fallback checkpoint if time runs short, not your actual target.
+
+---
+
+## 8. What Makes This "Industry-Grade" (for your README / interview pitch)
+
+- **Microservice separation** of concerns (auth / core / routing) instead of a monolith
+- **Async job queue** for CPU-heavy computation instead of blocking requests
+- **Self-implemented algorithms** with unit tests, not library calls
+- **Real-time system** via WebSockets, not just polling
+- **Full CI/CD** with automated testing gating deployment
+- **Containerized, reproducible environment** via Docker Compose
+
+This combination — a genuine algorithmic core, sound service boundaries, and a working pipeline — is exactly what separates a capstone from a portfolio-filler project.
