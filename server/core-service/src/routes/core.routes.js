@@ -5,6 +5,7 @@ const agentController = require('../controllers/agent.controller');
 const zoneController = require('../controllers/zone.controller');
 const clusteringController = require('../controllers/clustering.controller');
 const assignmentController = require('../controllers/assignment.controller');
+const slaController = require('../controllers/sla.controller');
 const { verifyToken, checkRole } = require('../middleware/auth');
 
 // Apply verifyToken to all routes below
@@ -31,5 +32,9 @@ router.get('/zones', zoneController.getZones);
 // DSA Engine Endpoints (Zone Clustering & MinHeap Agent Assignment)
 router.post('/clusters/run', checkRole(['admin', 'dispatcher']), clusteringController.triggerClustering);
 router.post('/assignments/run', checkRole(['admin', 'dispatcher']), assignmentController.triggerAssignment);
+
+// SLA Monitor
+router.get('/sla/stats',    checkRole(['admin', 'dispatcher']), slaController.getStats);
+router.get('/sla/breaches', checkRole(['admin', 'dispatcher']), slaController.getBreaches);
 
 module.exports = router;

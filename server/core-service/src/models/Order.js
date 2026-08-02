@@ -15,7 +15,10 @@ const orderSchema = new mongoose.Schema({
   },
   priority: { type: String, enum: ['low', 'normal', 'high'], default: 'normal' },
   status: { type: String, enum: ['PENDING', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED', 'FAILED'], default: 'PENDING' },
-  assignedAgent: { type: mongoose.Schema.Types.ObjectId, ref: 'Agent' }
+  assignedAgent: { type: mongoose.Schema.Types.ObjectId, ref: 'Agent' },
+  // SLA tracking timestamps
+  assignedAt:  { type: Date },   // when the order was handed to an agent
+  deliveredAt: { type: Date },   // when the order reached terminal state (DELIVERED or FAILED)
 }, { timestamps: true });
 
 // 2dsphere index for geospatial proximity queries
