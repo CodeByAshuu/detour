@@ -1,9 +1,9 @@
-# SmartRoute — Project Structure & Dependencies
+# Detour — Project Structure & Dependencies
 
 ## 1. Folder Structure (Monorepo)
 
 ```
-smartroute/
+Detour/
 ├── ProjectInfo.txt
 ├── docker-compose.yml
 ├── docker-compose.dev.yml

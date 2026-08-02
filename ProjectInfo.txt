@@ -162,65 +162,64 @@ The platform has three user roles:
 
 ## 7. Project Roadmap / Execution Plan
 
-### Phase 0 — Setup (Day 1)
-- Initialize monorepo (or 3 repos): `client/`, `server/` (with `auth-service`, `core-service`, `routing-service`), shared `types/`
+### Phase 0 — Setup
+- Initialize monorepo (or 3 repos): `client/`, `server/` (with `auth-service`, `core-service`, `routing-service`)
 - Set up MongoDB Atlas cluster, Redis instance
 - Basic Express boilerplate for all 3 services + health-check endpoints
 - Docker Compose file wiring all services together locally
 
-### Phase 1 — Core Data Layer (Day 2-3)
+### Phase 1 — Core Data Layer
 - Mongoose schemas: `User`, `Agent`, `Order`, `Zone`
 - Auth service: register/login, JWT issuance, RBAC middleware
 - Core CRUD APIs for Orders and Agents
 - Basic React shell: login, role-based routing, dashboard skeletons
 
-### Phase 2 — DSA Core: Zone Clustering + Assignment (Day 4-5)
+### Phase 2 — DSA Core: Zone Clustering + Assignment
 - Implement Union-Find for clustering delivery points by distance threshold
 - Implement Min-Heap-based agent assignment logic
 - Unit tests for both (this is important — testable algorithm code is a strong signal)
 
-### Phase 3 — DSA Core: Routing Engine (Day 6-8)
+### Phase 3 — DSA Core: Routing Engine
 - Build graph representation (adjacency list) from delivery points
 - Implement Dijkstra's algorithm from scratch
 - Implement A\* with Haversine-distance heuristic
 - Implement Held-Karp DP for multi-stop TSP (bounded N)
 - Expose as internal API endpoints, queue heavy jobs via BullMQ
 
-### Phase 4 — SLA Monitor (Day 9)
+### Phase 4 — SLA Monitor
 - Sliding window implementation over delivery timestamps
 - Breach detection + alert flagging
 
-### Phase 5 — Frontend Integration (Day 10-12)
+### Phase 5 — Frontend Integration 
 - Leaflet map integration: depot, agents, delivery points, route polylines
 - Socket.io client: live agent movement simulation
 - Admin analytics dashboard (Recharts/Chart.js)
 - Dispatcher UI: create orders, trigger optimization, view assignment results
 - Agent UI: view assigned route, mark deliveries complete
 
-### Phase 6 — Testing (Day 13)
+### Phase 6 — Testing
 - Backend: Jest unit tests for all DSA modules + Supertest for API endpoints
 - Frontend: React Testing Library for key components
 - Aim for meaningful coverage on the algorithm modules specifically — that's what you'll be asked about
 
-### Phase 7 — Dockerization (Day 14)
+### Phase 7 — Dockerization
 - Dockerfile per service (multi-stage builds for smaller images)
 - `docker-compose.yml` for full local stack (client, 3 services, MongoDB, Redis, Nginx)
 
-### Phase 8 — CI/CD Pipeline (Day 15-16)
+### Phase 8 — CI/CD Pipeline
 - **GitHub Actions**: on PR → lint + test; on merge to `main` → build Docker images → push to Docker Hub/GHCR → deploy to Render/Railway
 - **Jenkins** (optional, for dual-tool demonstration): staging deploy on merge to `develop`, manual promotion to production pipeline
 
-### Phase 9 — Deployment & Monitoring (Day 17)
+### Phase 9 — Deployment & Monitoring
 - Deploy frontend to Vercel, backend services to Render/Railway
 - Basic health-check monitoring, structured logging (Winston)
 - Optional: Prometheus + Grafana dashboard for request latency/error rates
 
-### Phase 10 — Documentation (Day 18)
+### Phase 10 — Documentation
 - README with architecture diagram, setup instructions, DSA-concept-to-code mapping table
 - API documentation (Postman collection or Swagger)
 - Record a short demo video/GIF
 
-**Total realistic timeline: ~2.5-3.5 weeks** working steadily, not full-time — which is normal and expected for a capstone of this depth. Treat the earlier "2-3 day" version as your fallback checkpoint if time runs short, not your actual target.
 
 ---
 

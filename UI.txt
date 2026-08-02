@@ -1,0 +1,16 @@
+Since this is a real-time ops dashboard — dispatchers watching live agent movement and routes — I'd lean into a genuine "control room" aesthetic, not a marketing-site look. That's also a practical choice: dark interfaces reduce eye strain during long monitoring shifts and make map overlays/route lines pop, which is why most fleet-tracking and radar-style tools (flight trackers, shipping ops, ride-hail driver apps) go this direction.
+
+Palette — functional, not decorative. Each color encodes a real system state rather than being chosen for looks:
+
+Token	        Hex	            Meaning
+Ink (base bg)   #0B1220	Near-black navy — the "screen"
+Panel	#131B2E	Cards, sidebars
+Hairline	#26314A	Borders/dividers
+Text primary	#E7ECF5	Main text
+Text muted	#8B93A8	Secondary text
+Signal green	#33D6A0	In-transit / delivered / healthy
+Alert coral	#FF6B5C	SLA breach / failed delivery
+Radar cyan	#4FC3F7	Live tracking / informational
+Priority amber	#FFB454	High-priority order / warning
+
+Type pairing: Space Grotesk for headers (technical, geometric — feels like instrumentation), IBM Plex Sans for body text, and IBM Plex Mono for anything data-like — order IDs, coordinates, ETAs, timestamps. That mono treatment is a small detail that reads as "built by someone who thinks about systems," which is exactly the impression you want.
