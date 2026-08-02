@@ -36,10 +36,12 @@ function MapBounds({ bounds }) {
   return null;
 }
 
+const DEFAULT_DEPOT = [12.97, 77.59]; // Default to Bengaluru [lat, lng]
+
 export default function MapView({ 
   orders = [], 
   routes = [], 
-  depot = [12.97, 77.59] // Default to Bengaluru [lat, lng]
+  depot = DEFAULT_DEPOT 
 }) {
   const { agentPositions } = useSocket();
   const [bounds, setBounds] = useState([]);

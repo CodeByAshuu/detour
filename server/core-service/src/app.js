@@ -13,8 +13,9 @@ const server = http.createServer(app);
 // ── Socket.io ──────────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost', 'http://127.0.0.1:5173'],
+    origin: true,
     methods: ['GET', 'POST'],
+    credentials: true
   },
 });
 
@@ -49,7 +50,7 @@ io.on('connection', (socket) => {
 // ── HTTP Middleware ─────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost', 'http://127.0.0.1:5173'],
+  origin: true,
   credentials: true,
 }));
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));

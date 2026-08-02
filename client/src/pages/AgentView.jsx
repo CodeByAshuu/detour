@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { ordersApi, routingApi } from '../lib/api';
+import MapView from '../components/map/MapView';
 import toast from 'react-hot-toast';
 
 export default function AgentView() {

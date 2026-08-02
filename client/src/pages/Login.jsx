@@ -56,27 +56,27 @@ const Login = () => {
         {success && <p className="text-signal-green text-sm mb-4 font-plex-mono">{success}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-text-muted text-xs font-plex-mono tracking-wider mb-1">EMAIL</label>
-            <input
-              id="email"
-              type="email"
+          <div className="mb-6">
+            <label className="block text-text-muted font-plex-mono text-xs mb-2">Email</label>
+            <input 
+              type="text" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-ink border border-hairline text-text-primary font-plex-mono px-4 py-2 rounded focus:outline-none focus:border-radar-cyan transition-colors"
               required
+              autoComplete="username"
             />
           </div>
 
-          <div>
-            <label className="block text-text-muted text-xs font-plex-mono tracking-wider mb-1">PASSWORD</label>
-            <input
-              id="password"
-              type="password"
+          <div className="mb-8">
+            <label className="block text-text-muted font-plex-mono text-xs mb-2">Password</label>
+            <input 
+              type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-ink border border-hairline text-text-primary font-plex-mono px-4 py-2 rounded focus:outline-none focus:border-radar-cyan transition-colors"
               required
+              autoComplete="current-password"
             />
           </div>
 
