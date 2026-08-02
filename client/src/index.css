@@ -18,9 +18,127 @@
 
 @layer base {
   body {
-    @apply bg-ink text-text-primary font-plex-sans antialiased;
+    @apply bg-ink text-text-primary font-plex-sans antialiased overflow-hidden h-screen w-screen m-0;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-space;
   }
+}
+
+@layer components {
+  /* Layout */
+  .app-layout {
+    @apply flex h-screen w-screen overflow-hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    @apply w-64 bg-panel border-r border-hairline flex flex-col h-full z-10 shadow-lg shrink-0;
+  }
+  .sidebar-logo {
+    @apply flex items-center gap-3 px-6 py-5 border-b border-hairline;
+  }
+  .logo-mark {
+    @apply text-radar-cyan text-xl;
+  }
+  .logo-text {
+    @apply font-space font-bold text-lg tracking-wide text-text-primary;
+  }
+  
+  .socket-pill {
+    @apply mx-6 mt-4 mb-2 flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-xs font-plex-mono uppercase tracking-wider;
+    background: rgba(11, 18, 32, 0.5);
+  }
+  .socket-pill.connected {
+    @apply text-signal-green border border-signal-green/30;
+  }
+  .socket-pill.disconnected {
+    @apply text-alert-coral border border-alert-coral/30;
+  }
+  .socket-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  .socket-pill.connected .socket-dot {
+    @apply bg-signal-green shadow-[0_0_8px_rgba(51,214,160,0.8)];
+    animation: pulse 2s infinite;
+  }
+  .socket-pill.disconnected .socket-dot {
+    @apply bg-alert-coral;
+  }
+
+  .sidebar-nav {
+    @apply flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1;
+  }
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-text-muted font-medium transition-all duration-200;
+  }
+  .nav-item:hover {
+    @apply text-text-primary bg-ink/50;
+  }
+  .nav-item.active {
+    @apply text-radar-cyan bg-ink border-l-2 border-radar-cyan shadow-[inset_4px_0_0_0_rgba(79,195,247,0.1)];
+  }
+  .nav-icon {
+    @apply text-lg;
+  }
+
+  .sidebar-footer {
+    @apply p-4 border-t border-hairline flex items-center justify-between;
+  }
+  .user-chip {
+    @apply flex items-center gap-2 text-sm text-text-muted;
+  }
+  .user-role {
+    @apply font-plex-mono text-xs text-text-primary;
+  }
+  .logout-btn {
+    @apply p-2 rounded hover:bg-alert-coral/10 hover:text-alert-coral transition-colors;
+  }
+
+  /* Cards & Panels */
+  .panel {
+    @apply bg-panel border border-hairline rounded-lg overflow-hidden shadow-lg;
+  }
+  .panel-header {
+    @apply px-4 py-3 border-b border-hairline bg-ink/30 font-space text-sm tracking-wide text-text-muted uppercase;
+  }
+  .panel-body {
+    @apply p-4;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply px-4 py-2 bg-radar-cyan text-ink font-semibold rounded hover:bg-radar-cyan/90 transition-colors disabled:opacity-50 flex justify-center items-center gap-2;
+  }
+  .btn-secondary {
+    @apply px-4 py-2 border border-hairline text-text-primary font-semibold rounded hover:bg-hairline transition-colors disabled:opacity-50 flex justify-center items-center gap-2;
+  }
+  .btn-danger {
+    @apply px-4 py-2 bg-alert-coral text-ink font-semibold rounded hover:bg-alert-coral/90 transition-colors disabled:opacity-50 flex justify-center items-center gap-2;
+  }
+
+  /* Inputs */
+  .input-field {
+    @apply w-full bg-ink border border-hairline rounded px-3 py-2 text-text-primary focus:outline-none focus:border-radar-cyan transition-colors font-plex-mono text-sm;
+  }
+
+  /* Data Table */
+  .data-table {
+    @apply w-full text-left border-collapse;
+  }
+  .data-table th {
+    @apply px-4 py-3 bg-ink/50 font-space text-xs text-text-muted uppercase tracking-wider border-b border-hairline;
+  }
+  .data-table td {
+    @apply px-4 py-3 border-b border-hairline text-sm;
+  }
+  .data-table tr:hover td {
+    @apply bg-ink/20;
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
 }

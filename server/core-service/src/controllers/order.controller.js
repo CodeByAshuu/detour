@@ -32,7 +32,6 @@ exports.getOrderById = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
   try {
-    // Stamp deliveredAt on the document if transitioning to a terminal state
     const terminalStatuses = ['DELIVERED', 'FAILED'];
     const incomingStatus = req.body.status;
 
@@ -44,9 +43,26 @@ exports.updateOrder = async (req, res) => {
     const order = await Order.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
-    // Feed completed order into the live SLA sliding window
+    // Feed completed order into live SLA sliding window
     if (terminalStatuses.includes(order.status)) {
       recordDelivery(order);
+    }
+
+    // Emit real-time event to all connected dispatchers
+    const io = req.app.get('io');
+    if (io) {
+      io.to('dispatchers').emit('order:updated', {
+        orderId: order._id,
+        status:  order.status,
+        ts:      Date.now(),
+      });
+      // If an agent is assigned, also notify their room
+      if (order.assignedAgent) {
+        io.to(`agent:${order.assignedAgent}`).emit('order:updated', {
+          orderId: order._id,
+          status:  order.status,
+        });
+      }
     }
 
     res.status(200).json(order);
