@@ -20,6 +20,14 @@
   body {
     @apply bg-ink text-text-primary font-plex-sans antialiased overflow-hidden h-screen w-screen m-0;
   }
+  body.landing-page {
+    /* App dashboards are fixed-height, but the public landing page must use
+       the document scroll container for its sections and anchor navigation. */
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
   h1, h2, h3, h4, h5, h6 {
     @apply font-space;
   }

@@ -41,6 +41,11 @@ export default function LandingPage() {
   };
 
   useEffect(() => {
+    // Dashboard routes intentionally lock the viewport. The marketing landing
+    // page is long-form content, so opt it back into document scrolling and
+    // restore the dashboard behavior on navigation.
+    document.body.classList.add('landing-page');
+
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const blobSpeeds = [0.06, 0.12, 0.18, 0.09];
@@ -110,6 +115,7 @@ export default function LandingPage() {
     algoNodes.forEach((n) => algoObserver.observe(n));
 
     return () => {
+      document.body.classList.remove('landing-page');
       window.removeEventListener('scroll', handleScroll);
       revealObserver.disconnect();
       algoObserver.disconnect();
@@ -146,7 +152,7 @@ export default function LandingPage() {
       <nav ref={navRef}>
         <div className="sr-logo">
           <span className="sr-logo-dot"></span>
-          <span className="sr-display" style={{ fontWeight: 600 }}>SmartRoute</span>
+          <span className="sr-display" style={{ fontWeight: 600 }}>Detour</span>
         </div>
         <div className="sr-nav-right">
           <div className="sr-nav-links">
@@ -185,7 +191,7 @@ export default function LandingPage() {
             Every route,<br />optimi<span className="sr-accent">z</span>ed.
           </h1>
           <p className="sr-hero-sub">
-            SmartRoute clusters orders, assigns agents, and computes optimal
+            Detour clusters orders, assigns agents, and computes optimal
             multi-stop deliveries in real time — with the graph algorithms doing
             the actual work, not a third-party API pretending to.
           </p>
@@ -354,7 +360,7 @@ export default function LandingPage() {
 
       {/* ══════════════ FOOTER ══════════════ */}
       <footer>
-        <div className="sr-footer-mark">Smart<span className="sr-fill">Route</span></div>
+        <div className="sr-footer-mark">De<span className="sr-fill">Tour</span></div>
 
         <div className="sr-footer-grid">
           <div className="sr-footer-col">
@@ -380,7 +386,7 @@ export default function LandingPage() {
             <span onClick={goToApp} style={{ cursor: 'pointer', color: 'var(--sr-cyan)' }}>
               {ctaLabel} →
             </span>
-            <span>© 2026 SmartRoute</span>
+            <span>© 2026 Detour</span>
           </div>
         </div>
       </footer>
