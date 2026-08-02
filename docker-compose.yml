@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   nginx:
     image: nginx:alpine
@@ -19,8 +17,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost/api
 
   auth-service:
     build:
@@ -28,10 +24,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5001:5001"
-    environment:
-      - PORT=5001
-      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/detour}
-      - JWT_SECRET=${JWT_SECRET:-devsecret_please_change}
+    env_file:
+      - ./server/auth-service/.env
     depends_on:
       - mongodb
 
@@ -41,10 +35,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5002:5002"
-    environment:
-      - PORT=5002
-      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/detour}
-      - JWT_SECRET=${JWT_SECRET:-devsecret_please_change}
+    env_file:
+      - ./server/core-service/.env
     depends_on:
       - mongodb
 
@@ -54,9 +46,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5003:5003"
-    environment:
-      - PORT=5003
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    env_file:
+      - ./server/routing-service/.env
     depends_on:
       - redis
 
