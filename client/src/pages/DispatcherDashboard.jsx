@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ordersApi, clusterApi, assignApi } from '../lib/api';
+import { ordersApi, clusterApi, assignApi, routingApi } from '../lib/api';
 import { useSocket } from '../context/SocketContext';
 import MapView from '../components/map/MapView';
 import toast from 'react-hot-toast';
@@ -30,6 +30,56 @@ export default function DispatcherDashboard() {
       fetchOrders();
     }
   }, [orderEvents]);
+
+  // Compute routes whenever orders change
+  useEffect(() => {
+    const computeRoutes = async () => {
+      // Group pending/assigned/in_transit orders by agent
+      const activeOrders = orders.filter(o => ['ASSIGNED', 'IN_TRANSIT'].includes(o.status) && o.assignedAgent);
+      const agentMap = {};
+      activeOrders.forEach(o => {
+        const agentId = o.assignedAgent._id || o.assignedAgent;
+        if (!agentMap[agentId]) agentMap[agentId] = [];
+        agentMap[agentId].push(o);
+      });
+
+      const newRoutes = [];
+      const depotLocation = { id: 'Depot', coordinates: [77.59, 12.97] }; // Default Bengaluru depot
+
+      for (const [agentId, agentOrders] of Object.entries(agentMap)) {
+        try {
+          const stops = agentOrders.map(o => ({
+            id: o._id,
+            coordinates: o.dropPoint.coordinates
+          }));
+
+          // Avoid calling TSP if stops > 12 to prevent backend 400 error
+          if (stops.length > 0 && stops.length <= 12) {
+            const res = await routingApi.optimizeTSP({ depotLocation, stops });
+            // Reconstruct path for polyline: Depot -> stop 1 -> stop 2 -> ... -> Depot
+            const pathCoords = [depotLocation.coordinates];
+            res.data.orderedStops.forEach(s => pathCoords.push(s.coordinates));
+            pathCoords.push(depotLocation.coordinates); // Return to depot
+
+            newRoutes.push({
+              agentId,
+              path: pathCoords,
+              distance: res.data.totalDistance
+            });
+          }
+        } catch (err) {
+          console.error(`Failed to route for agent ${agentId}`, err);
+        }
+      }
+      setRoutes(newRoutes);
+    };
+
+    if (orders.length > 0) {
+      computeRoutes();
+    } else {
+      setRoutes([]);
+    }
+  }, [orders]);
 
   const handleCreateRandomOrder = async () => {
     // Generate a random drop point near Bengaluru

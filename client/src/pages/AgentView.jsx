@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { ordersApi } from '../lib/api';
+import { ordersApi, routingApi } from '../lib/api';
 import toast from 'react-hot-toast';
 
 export default function AgentView() {
@@ -58,6 +58,36 @@ export default function AgentView() {
     return () => clearInterval(interval);
   }, [isSimulating, user.agentId, emitAgentLocation]);
 
+  const [route, setRoute] = useState(null);
+  useEffect(() => {
+    const computeRoute = async () => {
+      try {
+        const depotLocation = { id: 'Depot', coordinates: [77.59, 12.97] };
+        const stops = assignedOrders.map(o => ({
+          id: o._id,
+          coordinates: o.dropPoint.coordinates
+        }));
+
+        if (stops.length > 0 && stops.length <= 12) {
+          const res = await routingApi.optimizeTSP({ depotLocation, stops });
+          const pathCoords = [depotLocation.coordinates];
+          res.data.orderedStops.forEach(s => pathCoords.push(s.coordinates));
+          pathCoords.push(depotLocation.coordinates);
+          setRoute({ path: pathCoords });
+        } else {
+          setRoute(null);
+        }
+      } catch (err) {
+        console.error('Failed to compute route', err);
+      }
+    };
+    if (assignedOrders.length > 0) {
+      computeRoute();
+    } else {
+      setRoute(null);
+    }
+  }, [assignedOrders]);
+
   const handleMarkStatus = async (orderId, status) => {
     try {
       await ordersApi.update(orderId, { status });
@@ -74,8 +104,7 @@ export default function AgentView() {
       <div className="flex-1 relative hidden lg:block">
         <MapView 
           orders={assignedOrders} 
-          // Just a visual line connecting depot -> current pos -> stops
-          routes={[{ path: [[12.97, 77.59], [currentPos[1], currentPos[0]]] }]} 
+          routes={route ? [route] : []} 
         />
       </div>
 

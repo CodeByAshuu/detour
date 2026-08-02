@@ -68,14 +68,14 @@ export default function AdminDashboard() {
         <div className="panel p-5">
           <div className="text-xs font-space text-text-muted uppercase mb-2">Rolling Avg Delivery</div>
           <div className="text-3xl font-plex-mono text-radar-cyan">
-            {slaStats?.rollingAvgMinutes.toFixed(1)} <span className="text-lg">min</span>
+            {(slaStats?.rollingAvgMinutes || 0).toFixed(1)} <span className="text-lg">min</span>
           </div>
         </div>
         
         <div className="panel p-5">
           <div className="text-xs font-space text-text-muted uppercase mb-2">SLA Breach Rate</div>
-          <div className={`text-3xl font-plex-mono ${slaStats?.breachRate > 0.1 ? 'text-alert-coral' : 'text-signal-green'}`}>
-            {(slaStats?.breachRate * 100).toFixed(1)}%
+          <div className={`text-3xl font-plex-mono ${(slaStats?.breachRate || 0) > 0.1 ? 'text-alert-coral' : 'text-signal-green'}`}>
+            {((slaStats?.breachRate || 0) * 100).toFixed(1)}%
           </div>
         </div>
 
