@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useSocket } from '../../context/SocketContext';
@@ -19,7 +19,9 @@ const createDotIcon = (colorHex, pulse = false) => L.divIcon({
 
 const icons = {
   depot: createDotIcon('#FFB454', true), // Priority amber
-  agent: createDotIcon('#4FC3F7', true), // Radar cyan (live)
+  // Live positions update several times per second. A static marker is easier to
+  // follow than a CSS pulse, which otherwise reads as a randomly blinking dot.
+  agent: createDotIcon('#4FC3F7', false),
   order: createDotIcon('#E7ECF5', false), // Text primary
   delivered: createDotIcon('#33D6A0', false), // Signal green
   failed: createDotIcon('#FF6B5C', false), // Alert coral
@@ -41,12 +43,11 @@ const DEFAULT_DEPOT = [12.97, 77.59]; // Default to Bengaluru [lat, lng]
 export default function MapView({ 
   orders = [], 
   routes = [], 
+  agents = [],
   depot = DEFAULT_DEPOT 
 }) {
   const { agentPositions } = useSocket();
-  const [bounds, setBounds] = useState([]);
-
-  useEffect(() => {
+  const bounds = useMemo(() => {
     // Calculate bounds based on orders and depot
     const pts = [depot];
     orders.forEach(o => {
@@ -55,15 +56,33 @@ export default function MapView({
         pts.push([o.dropPoint.coordinates[1], o.dropPoint.coordinates[0]]);
       }
     });
-    // Add agent positions
-    Object.values(agentPositions).forEach(pos => {
-      pts.push([pos.coordinates[1], pos.coordinates[0]]);
+    agents.forEach((agent) => {
+      const coordinates = agent.currentLocation?.coordinates;
+      if (Array.isArray(coordinates) && coordinates.length === 2) {
+        pts.push([coordinates[1], coordinates[0]]);
+      }
     });
+    return pts.length > 1 ? L.latLngBounds(pts) : null;
+  }, [orders, agents, depot]);
 
-    if (pts.length > 1) {
-      setBounds(L.latLngBounds(pts));
-    }
-  }, [orders, depot, agentPositions]);
+  // Start with every registered agent's saved location, then replace it with a
+  // live socket location as soon as one arrives. This makes the full fleet
+  // visible before the simulator has sent its first position update.
+  const displayedAgents = useMemo(() => {
+    const byId = new Map();
+    agents.forEach((agent) => {
+      const coordinates = agent.currentLocation?.coordinates;
+      if (Array.isArray(coordinates) && coordinates.length === 2) {
+        byId.set(String(agent._id), { ...agent, coordinates, isLive: false });
+      }
+    });
+    Object.entries(agentPositions).forEach(([agentId, position]) => {
+      if (Array.isArray(position?.coordinates) && position.coordinates.length === 2) {
+        byId.set(agentId, { ...byId.get(agentId), coordinates: position.coordinates, isLive: true });
+      }
+    });
+    return [...byId.entries()];
+  }, [agents, agentPositions]);
 
   // Dark theme map tiles (CartoDB Dark Matter)
   const mapUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
@@ -81,7 +100,7 @@ export default function MapView({
           attribution='&copy; <a href="https://carto.com/">Carto</a>'
         />
 
-        {bounds.length > 0 && <MapBounds bounds={bounds} />}
+        {bounds && <MapBounds bounds={bounds} />}
 
         {/* Depot */}
         <Marker position={depot} icon={icons.depot}>
@@ -125,18 +144,22 @@ export default function MapView({
         })}
 
         {/* Live Agents */}
-        {Object.entries(agentPositions).map(([agentId, pos]) => (
-          <Marker 
-            key={`agent-${agentId}`} 
-            position={[pos.coordinates[1], pos.coordinates[0]]} 
-            icon={icons.agent}
-          >
-            <Popup>
-              <div className="font-space text-ink font-bold">AGENT {agentId.slice(-4)}</div>
-              <div className="font-plex-mono text-xs mt-1">Live position</div>
-            </Popup>
-          </Marker>
-        ))}
+        {displayedAgents
+          .filter(([, agent]) =>
+            Number.isFinite(agent.coordinates[0]) && Number.isFinite(agent.coordinates[1])
+          )
+          .map(([agentId, agent]) => (
+            <Marker
+              key={`agent-${agentId}`}
+              position={[agent.coordinates[1], agent.coordinates[0]]}
+              icon={icons.agent}
+            >
+              <Popup>
+                <div className="font-space text-ink font-bold">AGENT {agentId.slice(-4)}</div>
+                <div className="font-plex-mono text-xs mt-1">{agent.isLive ? 'Live position' : 'Last known position'}</div>
+              </Popup>
+            </Marker>
+          ))}
 
       </MapContainer>
 

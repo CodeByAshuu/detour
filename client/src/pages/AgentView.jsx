@@ -1,25 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { ordersApi, routingApi } from '../lib/api';
+import { agentsApi, ordersApi, routingApi } from '../lib/api';
 import MapView from '../components/map/MapView';
 import toast from 'react-hot-toast';
 
 export default function AgentView() {
   const { user } = useAuth();
-  const { emitAgentLocation, orderEvents } = useSocket();
+  const { orderEvents, joinAgent } = useSocket();
   const [assignedOrders, setAssignedOrders] = useState([]);
-  
-  // Simulation state
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [currentPos, setCurrentPos] = useState([77.59, 12.97]); // Start at Depot
+  const [agent, setAgent] = useState(null);
+
+  useEffect(() => {
+    const loadAgent = async () => {
+      try {
+        const res = await agentsApi.list();
+        const currentAgent = res.data.find((item) => String(item.userId) === String(user.id));
+        setAgent(currentAgent || null);
+        if (currentAgent) {
+          joinAgent(currentAgent._id);
+          if (currentAgent.shiftStatus !== 'active') {
+            await agentsApi.update(currentAgent._id, { shiftStatus: 'active' });
+            setAgent((previous) => previous ? { ...previous, shiftStatus: 'active' } : previous);
+          }
+        }
+      } catch {
+        toast.error('Failed to load agent profile');
+      }
+    };
+
+    if (user?.id) loadAgent();
+  }, [user?.id, joinAgent]);
 
   const fetchMyOrders = async () => {
     try {
       const res = await ordersApi.list();
       // Filter for orders assigned to this agent that are NOT terminal yet
       const mine = res.data.filter(
-        (o) => (o.assignedAgent?._id === user.agentId || o.assignedAgent === user.agentId) 
+        (o) => (o.assignedAgent?._id === agent?._id || o.assignedAgent === agent?._id)
                && !['DELIVERED', 'FAILED'].includes(o.status)
       );
       setAssignedOrders(mine);
@@ -29,35 +47,17 @@ export default function AgentView() {
   };
 
   useEffect(() => {
-    fetchMyOrders();
-  }, []);
+    if (agent?._id) fetchMyOrders();
+  }, [agent?._id]);
 
   // Refresh if socket event affects my orders
   useEffect(() => {
-    if (orderEvents.length > 0) {
+    if (agent?._id && orderEvents.length > 0) {
       fetchMyOrders();
     }
-  }, [orderEvents]);
+  }, [orderEvents, agent?._id]);
 
-  // GPS Simulation Loop
-  useEffect(() => {
-    let interval;
-    if (isSimulating) {
-      interval = setInterval(() => {
-        // Jitter the location slightly to simulate movement
-        setCurrentPos(prev => {
-          const newPos = [
-            prev[0] + (Math.random() - 0.5) * 0.002, // lng
-            prev[1] + (Math.random() - 0.5) * 0.002  // lat
-          ];
-          // Emit to dispatchers
-          emitAgentLocation(user.agentId, newPos);
-          return newPos;
-        });
-      }, 2000); // Ping every 2s
-    }
-    return () => clearInterval(interval);
-  }, [isSimulating, user.agentId, emitAgentLocation]);
+
 
   const [route, setRoute] = useState(null);
   useEffect(() => {
@@ -114,19 +114,8 @@ export default function AgentView() {
         <header className="p-6 border-b border-hairline flex justify-between items-end bg-panel">
           <div>
             <h1 className="text-xl font-space text-text-primary uppercase tracking-wider mb-1">Agent Route</h1>
-            <p className="text-xs font-plex-mono text-text-muted">ID: {user.agentId}</p>
+            <p className="text-xs font-plex-mono text-text-muted">ID: {agent?._id || 'Agent profile not linked'}</p>
           </div>
-          
-          <button 
-            onClick={() => setIsSimulating(!isSimulating)}
-            className={`px-3 py-1.5 rounded text-xs font-plex-mono font-bold uppercase transition-colors ${
-              isSimulating 
-                ? 'bg-signal-green text-ink shadow-[0_0_12px_rgba(51,214,160,0.5)]' 
-                : 'border border-hairline text-text-muted'
-            }`}
-          >
-            {isSimulating ? 'Live (Transmitting)' : 'Start GPS'}
-          </button>
         </header>
 
         <div className="flex-1 flex flex-col overflow-hidden">

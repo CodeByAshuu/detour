@@ -12,16 +12,29 @@ const { clusterOrders, haversineDistance } = require('../algorithms/unionFind');
  * @returns {Promise<Object>} Assignment results
  */
 async function runAgentAssignment(thresholdKm = 3.0) {
-  // Fetch pending orders and active agents
+  // Fetch pending orders and agents currently available for dispatch.
   const pendingOrders = await Order.find({ status: 'PENDING' });
-  const activeAgents = await Agent.find({ shiftStatus: 'active' });
+  let activeAgents = await Agent.find({ shiftStatus: 'active' });
+  let activatedIdleAgents = false;
 
   if (pendingOrders.length === 0) {
     return { message: 'No pending orders available for assignment', assignments: [] };
   }
 
   if (activeAgents.length === 0) {
-    return { message: 'No active agents available for assignment', assignments: [] };
+    // Older records were created with the schema's `offline` default, while
+    // the UI had no way to activate them. Treat those idle agents as available
+    // for the dispatcher, but never assign an agent explicitly on break.
+    activeAgents = await Agent.find({ shiftStatus: 'offline' });
+    if (activeAgents.length === 0) {
+      return { message: 'No active agents or idle agents available for assignment', assignments: [] };
+    }
+    activatedIdleAgents = true;
+    await Agent.updateMany(
+      { _id: { $in: activeAgents.map((agent) => agent._id) } },
+      { shiftStatus: 'active' }
+    );
+    activeAgents.forEach((agent) => { agent.shiftStatus = 'active'; });
   }
 
   // Step 1: Cluster pending orders into geographic zones using Union-Find
@@ -66,7 +79,7 @@ async function runAgentAssignment(thresholdKm = 3.0) {
       const orderIds = cluster.orders.map((o) => o._id);
       await Order.updateMany(
         { _id: { $in: orderIds } },
-        { status: 'ASSIGNED', assignedAgent: assignedAgent._id }
+        { status: 'ASSIGNED', assignedAgent: assignedAgent._id, assignedAt: new Date() }
       );
 
       // Update agent's current load in DB and in memory
@@ -86,6 +99,7 @@ async function runAgentAssignment(thresholdKm = 3.0) {
   return {
     totalClustersProcessed: clusters.length,
     successfulAssignments: assignments.length,
+    activatedIdleAgents,
     assignments,
   };
 }

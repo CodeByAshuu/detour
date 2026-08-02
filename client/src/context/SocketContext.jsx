@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
@@ -20,7 +20,13 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (!user) return; // only connect when logged in
 
-    const socket = io(CORE_URL, { transports: ['websocket'] });
+    // Do not force WebSocket-only transport. Socket.IO starts with HTTP polling
+    // when necessary and upgrades to WebSocket, avoiding a hard failure while
+    // the server/proxy is starting or does not expose WebSocket upgrades.
+    const socket = io(CORE_URL, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+    });
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -52,12 +58,16 @@ export const SocketProvider = ({ children }) => {
   }, [user]);
 
   /** Send agent location ping to server (used by AgentView simulation) */
-  const emitAgentLocation = (agentId, coordinates) => {
+  const emitAgentLocation = useCallback((agentId, coordinates) => {
     socketRef.current?.emit('agent:location', { agentId, coordinates });
-  };
+  }, []);
+
+  const joinAgent = useCallback((agentId) => {
+    socketRef.current?.emit('agent:join', { agentId });
+  }, []);
 
   return (
-    <SocketContext.Provider value={{ connected, agentPositions, orderEvents, emitAgentLocation }}>
+    <SocketContext.Provider value={{ connected, agentPositions, orderEvents, emitAgentLocation, joinAgent }}>
       {children}
     </SocketContext.Provider>
   );

@@ -31,9 +31,12 @@ io.on('connection', (socket) => {
     console.log(`[Socket] Agent ${agentId} joined room agent:${agentId}`);
   });
 
-  // Agent sends live location ping → broadcast to dispatcher room
+  // Broadcast live location to every dashboard. This keeps an agent's own map
+  // and all dispatcher/admin maps in sync.
   socket.on('agent:location', ({ agentId, coordinates }) => {
-    io.to('dispatchers').emit('agent:location', { agentId, coordinates, ts: Date.now() });
+    if (!agentId || !Array.isArray(coordinates) || coordinates.length !== 2 ||
+        !coordinates.every(Number.isFinite)) return;
+    io.emit('agent:location', { agentId, coordinates, ts: Date.now() });
   });
 
   // Dispatchers join their room

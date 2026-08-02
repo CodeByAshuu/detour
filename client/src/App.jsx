@@ -4,6 +4,7 @@ import { SocketProvider } from './context/SocketContext';
 import { Toaster } from 'react-hot-toast';
 
 import Login from './pages/Login';
+import LandingPage from './pages/Landing';
 import AdminDashboard from './pages/AdminDashboard';
 import DispatcherDashboard from './pages/DispatcherDashboard';
 import AgentView from './pages/AgentView';
@@ -25,6 +26,7 @@ const App = () => {
             style: { background: '#131B2E', color: '#E7ECF5', border: '1px solid #26314A' }
           }} />
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             
             <Route element={<AppLayout />}>

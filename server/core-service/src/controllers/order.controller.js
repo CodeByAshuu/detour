@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const Agent = require('../models/Agent');
 const { recordDelivery } = require('../services/sla.service');
 
 exports.createOrder = async (req, res) => {
@@ -34,6 +35,8 @@ exports.updateOrder = async (req, res) => {
   try {
     const terminalStatuses = ['DELIVERED', 'FAILED'];
     const incomingStatus = req.body.status;
+    const previousOrder = await Order.findById(req.params.id);
+    if (!previousOrder) return res.status(404).json({ error: 'Order not found' });
 
     const updatePayload = { ...req.body };
     if (terminalStatuses.includes(incomingStatus) && !updatePayload.deliveredAt) {
@@ -41,7 +44,18 @@ exports.updateOrder = async (req, res) => {
     }
 
     const order = await Order.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
-    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Release capacity exactly once when an assigned order reaches a terminal
+    // state; otherwise completed work permanently blocks later assignments.
+    if (
+      terminalStatuses.includes(order.status) &&
+      !terminalStatuses.includes(previousOrder.status) &&
+      order.assignedAgent
+    ) {
+      await Agent.findByIdAndUpdate(order.assignedAgent, {
+        $inc: { currentLoad: -1 },
+      });
+    }
 
     // Feed completed order into live SLA sliding window
     if (terminalStatuses.includes(order.status)) {
