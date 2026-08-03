@@ -37,7 +37,7 @@ export default function AgentView() {
       const res = await ordersApi.list();
       // Filter for orders assigned to this agent that are NOT terminal yet
       const mine = res.data.filter(
-        (o) => (o.assignedAgent?._id === agent?._id || o.assignedAgent === agent?._id)
+        (o) => String(o.assignedAgent?._id || o.assignedAgent) === String(agent?._id)
                && !['DELIVERED', 'FAILED'].includes(o.status)
       );
       setAssignedOrders(mine);
@@ -106,6 +106,8 @@ export default function AgentView() {
         <MapView 
           orders={assignedOrders} 
           routes={route ? [route] : []} 
+          agents={agent ? [agent] : []}
+          agentIds={agent ? [String(agent._id)] : []}
         />
       </div>
 
@@ -114,7 +116,9 @@ export default function AgentView() {
         <header className="p-6 border-b border-hairline flex justify-between items-end bg-panel">
           <div>
             <h1 className="text-xl font-space text-text-primary uppercase tracking-wider mb-1">Agent Route</h1>
-            <p className="text-xs font-plex-mono text-text-muted">ID: {agent?._id || 'Agent profile not linked'}</p>
+            <p className="text-xs font-plex-mono text-text-muted">
+              Agent ID: {agent?._id || 'Setting up your agent profile…'}
+            </p>
           </div>
         </header>
 

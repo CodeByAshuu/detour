@@ -29,7 +29,7 @@ describe('Agent Assignment Integration Logic', () => {
     expect(result.assignments).toEqual([]);
   });
 
-  it('should successfully assign order clusters to least loaded agent using MinHeap priority logic', async () => {
+  it('should spread delivery batches across eligible agents before assigning a second batch', async () => {
     const mockOrders = [
       { _id: 'ord1', pickupPoint: { coordinates: [77.6245, 12.9352] } },
       { _id: 'ord2', pickupPoint: { coordinates: [77.6270, 12.9380] } },
@@ -59,9 +59,11 @@ describe('Agent Assignment Integration Logic', () => {
 
     const result = await runAgentAssignment(3.0);
 
-    expect(result.successfulAssignments).toBe(1);
-    expect(result.assignments[0].assignedAgentId).toBe('agent2'); // Agent 2 wins due to lower load!
-    expect(mockAgent2.currentLoad).toBe(2); // Load updated from 0 + 2 orders
+    expect(result.successfulAssignments).toBe(2);
+    expect(result.assignments[0].assignedAgentId).toBe('agent2'); // First batch goes to least-loaded agent.
+    expect(result.assignments[1].assignedAgentId).toBe('agent1'); // Second batch is distributed fairly.
+    expect(mockAgent2.currentLoad).toBe(1);
+    expect(mockAgent1.currentLoad).toBe(4);
     expect(mockAgent2.save).toHaveBeenCalled();
   });
 });

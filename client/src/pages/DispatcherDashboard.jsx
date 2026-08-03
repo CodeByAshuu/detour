@@ -274,13 +274,14 @@ export default function DispatcherDashboard() {
 
         <div className="flex-1 overflow-y-auto p-0">
           <div className="px-4 py-3 bg-ink/30 font-space text-xs text-text-muted uppercase tracking-wide border-b border-hairline sticky top-0">
-            Pending Deliveries ({orders.filter((o) => o.status === 'PENDING').length})
+            Pending Orders ({orders.filter((o) => o.status === 'PENDING').length})
           </div>
-          <table className="data-table">
-            <tbody>
-              {orders
-                .filter((o) => o.status === 'PENDING')
-                .map((o) => (
+          {orders.some((o) => o.status === 'PENDING') ? (
+            <table className="data-table">
+              <tbody>
+                {orders
+                  .filter((o) => o.status === 'PENDING')
+                  .map((o) => (
                   <tr key={o._id}>
                     <td>
                       <div className="font-plex-mono text-xs">{o._id.slice(-6)}</div>
@@ -298,9 +299,14 @@ export default function DispatcherDashboard() {
                       </span>
                     </td>
                   </tr>
-                ))}
-            </tbody>
-          </table>
+                  ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-6 text-center text-sm font-plex-mono text-text-muted">
+              No pending orders. Assigned deliveries are visible on the map.
+            </div>
+          )}
         </div>
       </div>
     </div>

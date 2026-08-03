@@ -134,6 +134,16 @@ describe('clusterOrders Function (Geographical Zone Clustering)', () => {
     expect(cluster2.orders.map((o) => o._id)).toContain('ord4');
   });
 
+  it('clusters by delivery destination even when every order is picked up at the same depot', () => {
+    const depot = { type: 'Point', coordinates: [77.5946, 12.9716] };
+    const orders = [
+      { _id: 'near', pickupPoint: depot, dropPoint: { type: 'Point', coordinates: [77.6000, 12.9700] } },
+      { _id: 'far', pickupPoint: depot, dropPoint: { type: 'Point', coordinates: [77.7500, 12.9700] } },
+    ];
+
+    expect(clusterOrders(orders, 3.0)).toHaveLength(2);
+  });
+
   it('should correctly merge transitively linked clusters (A-B within 3km, B-C within 3km, but A-C > 3km)', () => {
     const orders = [
       { _id: 'ordA', pickupPoint: { type: 'Point', coordinates: [77.6000, 12.9000] } },

@@ -44,6 +44,7 @@ export default function MapView({
   orders = [], 
   routes = [], 
   agents = [],
+  agentIds = null,
   depot = DEFAULT_DEPOT 
 }) {
   const { agentPositions } = useSocket();
@@ -77,12 +78,13 @@ export default function MapView({
       }
     });
     Object.entries(agentPositions).forEach(([agentId, position]) => {
+      if (agentIds && !agentIds.includes(String(agentId))) return;
       if (Array.isArray(position?.coordinates) && position.coordinates.length === 2) {
         byId.set(agentId, { ...byId.get(agentId), coordinates: position.coordinates, isLive: true });
       }
     });
     return [...byId.entries()];
-  }, [agents, agentPositions]);
+  }, [agents, agentPositions, agentIds]);
 
   // Dark theme map tiles (CartoDB Dark Matter)
   const mapUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";

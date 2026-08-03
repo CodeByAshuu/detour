@@ -160,9 +160,11 @@ class UnionFind {
 
 /**
  * Clusters delivery orders into geographical zones using Union-Find.
- * Two orders are merged into the same cluster if their pickup points are within thresholdKm.
+ * Two orders are merged into the same cluster if their delivery destinations are
+ * within thresholdKm. Pickup points are often the same depot and must not be
+ * used for dispatch clustering.
  * 
- * @param {Array<Object>} orders - Array of order objects (must have _id and pickupPoint.coordinates)
+ * @param {Array<Object>} orders - Array of order objects (must have _id and dropPoint.coordinates)
  * @param {number} thresholdKm - Maximum distance in km between orders to belong to the same cluster
  * @returns {Array<Object>} Array of clusters with cluster ID, centroid coordinates, and order list
  */
@@ -179,6 +181,7 @@ function clusterOrders(orders = [], thresholdKm = 3.0) {
   // Map order IDs to their actual objects for quick lookup
   const orderMap = new Map();
   orders.forEach((o) => orderMap.set(String(o._id), o));
+  const deliveryCoordinates = (order) => order.dropPoint?.coordinates || order.pickupPoint?.coordinates;
 
   // Pairwise distance comparison between all unassigned delivery points: O(N^2)
   for (let i = 0; i < orders.length; i++) {
@@ -186,10 +189,10 @@ function clusterOrders(orders = [], thresholdKm = 3.0) {
       const orderA = orders[i];
       const orderB = orders[j];
 
-      // Calculate geographic distance between pickup locations
+      // Calculate distance between delivery locations, not the common depot.
       const dist = haversineDistance(
-        orderA.pickupPoint.coordinates,
-        orderB.pickupPoint.coordinates
+        deliveryCoordinates(orderA),
+        deliveryCoordinates(orderB)
       );
 
       // If within proximity threshold, merge into the same disjoint set / cluster
@@ -214,7 +217,7 @@ function clusterOrders(orders = [], thresholdKm = 3.0) {
     let totalLat = 0;
 
     for (const order of clusterOrdersList) {
-      const [lng, lat] = order.pickupPoint.coordinates;
+      const [lng, lat] = deliveryCoordinates(order);
       totalLng += lng;
       totalLat += lat;
     }

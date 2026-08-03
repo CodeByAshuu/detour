@@ -14,7 +14,13 @@ exports.createOrder = async (req, res) => {
 
 exports.getOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate('assignedAgent');
+    const filter = {};
+    if (req.userRole === 'agent') {
+      const agent = await Agent.findOne({ userId: req.userId });
+      if (!agent) return res.status(200).json([]);
+      filter.assignedAgent = agent._id;
+    }
+    const orders = await Order.find(filter).populate('assignedAgent');
     res.status(200).json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -23,7 +29,13 @@ exports.getOrders = async (req, res) => {
 
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('assignedAgent');
+    const filter = { _id: req.params.id };
+    if (req.userRole === 'agent') {
+      const agent = await Agent.findOne({ userId: req.userId });
+      if (!agent) return res.status(404).json({ error: 'Agent profile not found' });
+      filter.assignedAgent = agent._id;
+    }
+    const order = await Order.findOne(filter).populate('assignedAgent');
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.status(200).json(order);
   } catch (error) {
@@ -37,6 +49,13 @@ exports.updateOrder = async (req, res) => {
     const incomingStatus = req.body.status;
     const previousOrder = await Order.findById(req.params.id);
     if (!previousOrder) return res.status(404).json({ error: 'Order not found' });
+
+    if (req.userRole === 'agent') {
+      const agent = await Agent.findOne({ userId: req.userId });
+      if (!agent || String(previousOrder.assignedAgent) !== String(agent._id)) {
+        return res.status(403).json({ error: 'You can only update orders assigned to you' });
+      }
+    }
 
     const updatePayload = { ...req.body };
     if (terminalStatuses.includes(incomingStatus) && !updatePayload.deliveredAt) {
