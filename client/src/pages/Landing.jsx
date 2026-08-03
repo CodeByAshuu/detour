@@ -243,7 +243,7 @@ export default function LandingPage() {
             <div className="sr-module-blob" style={{ width: 110, height: 110, top: '60%', left: '24%' }}></div>
           </div>
           <div className="sr-module-labels">
-            <div className="sr-module-label" style={{ top: '38%', left: '30%' }}>
+            <div className="sr-module-label" style={{ top: '58%', left: '30%' }}>
               <span className="sr-dot" style={{ background: 'var(--sr-cyan)' }}></span>Order Mgmt
             </div>
             <div className="sr-module-label" style={{ top: '30%', left: '48%' }}>

@@ -28,6 +28,7 @@ export default function DispatcherDashboard() {
   const [routes, setRoutes] = useState([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationRoutes, setSimulationRoutes] = useState([]);
+  const [hideDeliveredOrders, setHideDeliveredOrders] = useState(false);
 
   // Per-agent simulation progress: { [agentId]: { segIdx, segProgressKm } }
   const simStateRef = useRef({});
@@ -242,7 +243,12 @@ export default function DispatcherDashboard() {
   return (
     <div className="flex h-full w-full">
       <div className="flex-1 relative">
-        <MapView orders={orders} routes={isSimulating ? simulationRoutes : routes} agents={agents} />
+        <MapView
+          orders={orders}
+          routes={isSimulating ? simulationRoutes : routes}
+          agents={agents}
+          hideDeliveredOrders={hideDeliveredOrders}
+        />
       </div>
 
       <div className="w-80 bg-panel border-l border-hairline flex flex-col shrink-0">
@@ -271,6 +277,13 @@ export default function DispatcherDashboard() {
             }`}
           >
             {isSimulating ? 'Stop Fleet Sim' : 'Start Fleet Sim'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setHideDeliveredOrders((hidden) => !hidden)}
+            className="btn-secondary w-full text-xs"
+          >
+            {hideDeliveredOrders ? 'Show Delivered Markers' : 'Clear Delivered Markers'}
           </button>
         </div>
 

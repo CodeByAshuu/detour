@@ -74,7 +74,7 @@ export default function AgentView() {
           const pathCoords = [depotLocation.coordinates];
           res.data.orderedStops.forEach(s => pathCoords.push(s.coordinates));
           pathCoords.push(depotLocation.coordinates);
-          setRoute({ path: pathCoords });
+          setRoute({ path: pathCoords, stops: res.data.orderedStops });
         } else {
           setRoute(null);
         }
@@ -100,9 +100,9 @@ export default function AgentView() {
   };
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full flex-col lg:flex-row">
       {/* Map Area */}
-      <div className="flex-1 relative hidden lg:block">
+      <div className="h-[45vh] min-h-72 flex-1 relative lg:h-auto">
         <MapView 
           orders={assignedOrders} 
           routes={route ? [route] : []} 

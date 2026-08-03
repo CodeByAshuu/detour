@@ -58,13 +58,18 @@ export default function MapView({
   routes = [], 
   agents = [],
   agentIds = null,
+  hideDeliveredOrders = false,
   depot = DEFAULT_DEPOT 
 }) {
   const { agentPositions } = useSocket();
+  const visibleOrders = useMemo(
+    () => orders.filter((order) => !hideDeliveredOrders || order.status !== 'DELIVERED'),
+    [orders, hideDeliveredOrders]
+  );
   const bounds = useMemo(() => {
     // Calculate bounds based on orders and depot
     const pts = [depot];
-    orders.forEach(o => {
+    visibleOrders.forEach(o => {
       if (o.dropPoint && o.dropPoint.coordinates) {
         // Mongo stores [lng, lat], Leaflet wants [lat, lng]
         pts.push([o.dropPoint.coordinates[1], o.dropPoint.coordinates[0]]);
@@ -77,7 +82,7 @@ export default function MapView({
       }
     });
     return pts.length > 1 ? L.latLngBounds(pts) : null;
-  }, [orders, agents, depot]);
+  }, [visibleOrders, agents, depot]);
 
   // Start with every registered agent's saved location, then replace it with a
   // live socket location as soon as one arrives. This makes the full fleet
@@ -125,7 +130,7 @@ export default function MapView({
         </Marker>
 
         {/* Orders (Drop points) */}
-        {orders.map(order => {
+        {visibleOrders.map(order => {
           if (!order.dropPoint?.coordinates) return null;
           const pos = [order.dropPoint.coordinates[1], order.dropPoint.coordinates[0]];
           
