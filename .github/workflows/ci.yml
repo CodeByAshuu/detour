@@ -56,10 +56,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Service .env files are deliberately gitignored. Compose requires their
+      # paths to exist during validation, so CI creates empty non-secret files.
+      - name: Create Compose environment placeholders
+        run: |
+          touch server/auth-service/.env
+          touch server/core-service/.env
+          touch server/routing-service/.env
       - run: docker compose config --quiet
 
   container-images:
-    name: Build ${{ matrix.name }} image
+    name: Build container images
     runs-on: ubuntu-latest
     needs: [backend-tests, client-build, docker-validate]
     strategy:
