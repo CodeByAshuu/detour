@@ -17,8 +17,21 @@ const createDotIcon = (colorHex, pulse = false) => L.divIcon({
   iconAnchor: [6, 6]
 });
 
+const createDepotIcon = () => L.divIcon({
+  className: 'custom-map-marker',
+  html: `<div style="
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: #FFB454; color: #0B1220; border: 3px solid #0B1220;
+    box-shadow: 0 0 0 2px #FFB454, 0 0 18px rgba(255,180,84,.9);
+    font: 700 13px/1 sans-serif;
+  ">⌂</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 const icons = {
-  depot: createDotIcon('#FFB454', true), // Priority amber
+  depot: createDepotIcon(),
   // Live positions update several times per second. A static marker is easier to
   // follow than a CSS pulse, which otherwise reads as a randomly blinking dot.
   agent: createDotIcon('#4FC3F7', false),
@@ -105,7 +118,7 @@ export default function MapView({
         {bounds && <MapBounds bounds={bounds} />}
 
         {/* Depot */}
-        <Marker position={depot} icon={icons.depot}>
+        <Marker position={depot} icon={icons.depot} zIndexOffset={1000}>
           <Popup>
             <div className="font-space text-ink font-bold">DEPOT (HQ)</div>
           </Popup>

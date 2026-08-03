@@ -164,10 +164,12 @@ export default function DispatcherDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSimulating, simulationRoutes]);
 
-  // Reset simulation progress whenever the route set changes shape entirely
+  // Route refreshes happen after each delivery. Never reset the active fleet
+  // from those refreshes, otherwise every other agent jumps back to depot.
+  // A new run explicitly clears progress in toggleSimulation instead.
   useEffect(() => {
-    simStateRef.current = {};
-  }, [routes.length]);
+    if (!isSimulating) simStateRef.current = {};
+  }, [routes.length, isSimulating]);
 
   const toggleSimulation = () => {
     if (isSimulating) {
