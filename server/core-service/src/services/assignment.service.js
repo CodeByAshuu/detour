@@ -72,6 +72,14 @@ async function runAgentAssignment(thresholdKm = 3.0) {
   const fairBatchSize = Math.max(1, Math.ceil(pendingOrders.length / activeAgents.length));
   const clusters = splitOversizedClusters(geographicClusters, fairBatchSize);
 
+  const deliveredStats = (await Order.aggregate([
+    { $match: { status: 'DELIVERED', assignedAgent: { $ne: null } } },
+    { $group: { _id: '$assignedAgent', completedCount: { $sum: 1 } } },
+  ])) || [];
+  const completedByAgent = new Map(
+    deliveredStats.map((stat) => [String(stat._id), stat.completedCount])
+  );
+
   // Remove old, not-yet-started assignments from the in-memory load before
   // selecting new owners. This makes re-running assignment a true rebalance.
   const agentsById = new Map(activeAgents.map((agent) => [String(agent._id), agent]));
@@ -95,7 +103,13 @@ async function runAgentAssignment(thresholdKm = 3.0) {
       if (agentA.currentLoad !== agentB.currentLoad) {
         return agentA.currentLoad - agentB.currentLoad;
       }
-      return agentA.distanceToCluster - agentB.distanceToCluster;
+      if (agentA.distanceToCluster !== agentB.distanceToCluster) {
+        return agentA.distanceToCluster - agentB.distanceToCluster;
+      }
+      if (agentA.completedCount !== agentB.completedCount) {
+        return agentA.completedCount - agentB.completedCount;
+      }
+      return agentA.lastAssignedAt - agentB.lastAssignedAt;
     });
 
     // Calculate proximity distance from each agent to cluster centroid and insert into MinHeap
@@ -112,6 +126,8 @@ async function runAgentAssignment(thresholdKm = 3.0) {
           batchesAssigned: batchesAssignedThisRun.get(String(agent._id)),
           currentLoad: agent.currentLoad,
           distanceToCluster: dist,
+          completedCount: completedByAgent.get(String(agent._id)) || 0,
+          lastAssignedAt: agent.lastAssignedAt ? new Date(agent.lastAssignedAt).getTime() : 0,
         });
       }
     }
@@ -132,6 +148,7 @@ async function runAgentAssignment(thresholdKm = 3.0) {
       // Update load in memory; all active agents are saved once after the
       // complete pass so rebalancing also persists agents that lost a stop.
       assignedAgent.currentLoad += cluster.orderCount;
+      assignedAgent.lastAssignedAt = new Date();
       batchesAssignedThisRun.set(
         String(assignedAgent._id),
         batchesAssignedThisRun.get(String(assignedAgent._id)) + 1

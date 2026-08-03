@@ -152,8 +152,9 @@ export default function MapView({
 
         {/* Routes (Polylines) */}
         {routes.map((route, idx) => {
-          // route.path is array of coordinates [[lng, lat], ...]
-          const latLngs = route.path.map(c => [c[1], c[0]]);
+          // displayPath may contain road geometry; path remains the small set
+          // of delivery waypoints used by the fleet simulator.
+          const latLngs = (route.displayPath || route.path).map(c => [c[1], c[0]]);
           return (
             <Polyline 
               key={`route-${idx}`}

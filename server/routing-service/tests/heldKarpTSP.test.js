@@ -56,6 +56,24 @@ describe('Held-Karp Dynamic Programming (Multi-Stop TSP)', () => {
     expect(result.orderedStops).toHaveLength(3);
   });
 
+  it('uses a supplied road-network distance matrix instead of straight-line distance', () => {
+    const stops = [
+      { id: 'A', coordinates: [77.60, 12.97] },
+      { id: 'B', coordinates: [77.61, 12.97] },
+    ];
+    // Road closures make visiting B first considerably cheaper than A first.
+    const roadDistances = [
+      [0, 20, 1],
+      [1, 0, 20],
+      [20, 1, 0],
+    ];
+
+    const result = solveHeldKarpTSP(depot, stops, { distanceMatrix: roadDistances });
+
+    expect(result.pathNodeIds).toEqual(['Depot', 'B', 'A', 'Depot']);
+    expect(result.totalDistance).toBe(3);
+  });
+
   it('PROVES DP GLOBAL OPTIMALITY: matches exact brute-force optimal distance for 5 stops', () => {
     const stops = [
       { id: 'S1', coordinates: [77.60, 12.98] },

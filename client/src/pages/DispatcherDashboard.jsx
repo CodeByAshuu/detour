@@ -90,8 +90,14 @@ export default function DispatcherDashboard() {
             newRoutes.push({
               agentId,
               path: pathCoords,
+              displayPath: res.data.roadPath || pathCoords,
+              // The visual line and the moving agent must use the same OSRM
+              // road geometry. `path` remains the logical stop list only.
+              navigationPath: res.data.roadPath || pathCoords,
+              stopPathIndexes: res.data.roadStopIndexes || agentOrders.map((_, index) => index + 1),
               stops: res.data.orderedStops, // aligned with path[1..N]
               distance: res.data.totalDistance,
+              routingSource: res.data.routingSource,
             });
           }
         } catch (err) {
@@ -122,8 +128,8 @@ export default function DispatcherDashboard() {
 
     const interval = setInterval(() => {
       simulationRoutes.forEach((route) => {
-        const { agentId, path, stops } = route;
-        if (!path || path.length < 2) return;
+        const { agentId, path, navigationPath = path, stopPathIndexes, stops } = route;
+        if (!navigationPath || navigationPath.length < 2) return;
 
         let state = simStateRef.current[agentId];
         if (!state) {
@@ -132,10 +138,10 @@ export default function DispatcherDashboard() {
         }
 
         // Already reached the end of this route (back at depot)
-        if (state.segIdx >= path.length - 1) return;
+        if (state.segIdx >= navigationPath.length - 1) return;
 
-        const from = path[state.segIdx];
-        const to = path[state.segIdx + 1];
+        const from = navigationPath[state.segIdx];
+        const to = navigationPath[state.segIdx + 1];
         const segDistKm = haversineKm(from, to) || 0.0001; // avoid div-by-zero
 
         state.segProgressKm += SIM_STEP_KM;
@@ -146,8 +152,9 @@ export default function DispatcherDashboard() {
           state.segProgressKm = 0;
           emitAgentLocation(agentId, to);
 
-          // path[0] is depot; path[1..stops.length] correspond to stops[0..N-1]
-          const stopIdx = state.segIdx - 1;
+          // OSRM gives us the geometry index at the end of each delivery leg.
+          // For a straight-line fallback these are the logical path indexes.
+          const stopIdx = (stopPathIndexes || []).indexOf(state.segIdx);
           const arrivedStop = stops[stopIdx];
           if (arrivedStop) {
             ordersApi.update(arrivedStop.id, { status: 'DELIVERED' }).catch(() => {});
@@ -190,6 +197,8 @@ export default function DispatcherDashboard() {
     setSimulationRoutes(routes.map((route) => ({
       ...route,
       path: [...route.path],
+      navigationPath: [...(route.navigationPath || route.path)],
+      stopPathIndexes: [...(route.stopPathIndexes || [])],
       stops: [...route.stops],
     })));
     setIsSimulating(true);

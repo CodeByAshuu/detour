@@ -3,6 +3,7 @@ const astar = require('../algorithms/astar');
 const { solveHeldKarpTSP } = require('../algorithms/heldKarpTSP');
 const { buildCompleteGraph, Graph } = require('../graph/buildGraph');
 const { addRoutingJob } = require('../queue/bullQueue');
+const { getRoadDistanceMatrix, getRoadPath } = require('../services/roadRouting.service');
 
 exports.computeShortestPath = async (req, res) => {
   try {
@@ -35,8 +36,35 @@ exports.optimizeTSP = async (req, res) => {
       return res.status(400).json({ error: 'depotLocation and stops array are required' });
     }
 
-    const result = solveHeldKarpTSP(depotLocation, stops, { maxStops });
-    res.status(200).json(result);
+    const nodes = [depotLocation, ...stops];
+    let distanceMatrix;
+    let routingSource = 'road-network';
+
+    try {
+      distanceMatrix = await getRoadDistanceMatrix(nodes);
+    } catch (error) {
+      // The optimization still works offline, but clients can distinguish its
+      // straight-line estimate from a true road-network route.
+      console.warn('Road distance matrix unavailable; using Haversine fallback:', error.message);
+      routingSource = 'straight-line-fallback';
+    }
+
+    const result = solveHeldKarpTSP(depotLocation, stops, { maxStops, distanceMatrix });
+    const orderedNodes = [depotLocation, ...result.orderedStops, depotLocation];
+    let roadPath = null;
+    let roadStopIndexes = null;
+    if (routingSource === 'road-network') {
+      try {
+        const roadRoute = await getRoadPath(orderedNodes);
+        roadPath = roadRoute?.roadPath || null;
+        roadStopIndexes = roadRoute?.roadStopIndexes || null;
+      } catch (error) {
+        console.warn('Road geometry unavailable; using straight-line map fallback:', error.message);
+        routingSource = 'straight-line-fallback';
+      }
+    }
+
+    res.status(200).json({ ...result, roadPath, roadStopIndexes, routingSource });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

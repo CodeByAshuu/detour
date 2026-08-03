@@ -37,8 +37,9 @@ function solveHeldKarpTSP(depotLocation, stops = [], options = {}) {
 
   // Edge Case 2: Single stop
   if (stops.length === 1) {
-    const distToStop = haversine(depotLocation.coordinates, stops[0].coordinates);
-    const distBack = returnToDepot ? haversine(stops[0].coordinates, depotLocation.coordinates) : 0;
+    const matrix = options.distanceMatrix;
+    const distToStop = matrix?.[0]?.[1] ?? haversine(depotLocation.coordinates, stops[0].coordinates);
+    const distBack = returnToDepot ? (matrix?.[1]?.[0] ?? haversine(stops[0].coordinates, depotLocation.coordinates)) : 0;
     return {
       totalDistance: distToStop + distBack,
       orderedStops: stops,
@@ -60,11 +61,11 @@ function solveHeldKarpTSP(depotLocation, stops = [], options = {}) {
   const N = nodes.length; // Total nodes including depot (N = stops.length + 1)
 
   // Precompute pairwise distance matrix distMatrix[i][j]
-  const distMatrix = Array.from({ length: N }, () => Array(N).fill(0));
-  for (let i = 0; i < N; i++) {
-    for (let j = 0; j < N; j++) {
-      if (i !== j) {
-        distMatrix[i][j] = haversine(nodes[i].coordinates, nodes[j].coordinates);
+  const distMatrix = options.distanceMatrix || Array.from({ length: N }, () => Array(N).fill(0));
+  if (!options.distanceMatrix) {
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        if (i !== j) distMatrix[i][j] = haversine(nodes[i].coordinates, nodes[j].coordinates);
       }
     }
   }

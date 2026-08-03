@@ -74,7 +74,14 @@ export default function AgentView() {
           const pathCoords = [depotLocation.coordinates];
           res.data.orderedStops.forEach(s => pathCoords.push(s.coordinates));
           pathCoords.push(depotLocation.coordinates);
-          setRoute({ path: pathCoords, stops: res.data.orderedStops });
+          setRoute({
+            path: pathCoords,
+            displayPath: res.data.roadPath || pathCoords,
+            navigationPath: res.data.roadPath || pathCoords,
+            stopPathIndexes: res.data.roadStopIndexes || res.data.orderedStops.map((_, index) => index + 1),
+            stops: res.data.orderedStops,
+            routingSource: res.data.routingSource,
+          });
         } else {
           setRoute(null);
         }

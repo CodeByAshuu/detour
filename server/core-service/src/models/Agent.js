@@ -8,6 +8,7 @@ const agentSchema = new mongoose.Schema({
   },
   capacity: { type: Number, default: 10 },
   currentLoad: { type: Number, default: 0 },
+  lastAssignedAt: { type: Date, default: null },
   shiftStatus: { type: String, enum: ['offline', 'active', 'on_break'], default: 'offline' }
 }, { timestamps: true });
 
