@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { agentsApi, ordersApi, routingApi } from '../lib/api';
 import MapView from '../components/map/MapView';
+import { createRoutePlan } from '../lib/routePlan';
 import toast from 'react-hot-toast';
 
 export default function AgentView() {
@@ -71,14 +72,15 @@ export default function AgentView() {
 
         if (stops.length > 0 && stops.length <= 12) {
           const res = await routingApi.optimizeTSP({ depotLocation, stops });
-          const pathCoords = [depotLocation.coordinates];
-          res.data.orderedStops.forEach(s => pathCoords.push(s.coordinates));
-          pathCoords.push(depotLocation.coordinates);
+          const routePlan = createRoutePlan({
+            depotCoordinates: depotLocation.coordinates,
+            orderedStops: res.data.orderedStops,
+            roadPath: res.data.roadPath,
+            roadStopIndexes: res.data.roadStopIndexes,
+          });
           setRoute({
-            path: pathCoords,
-            displayPath: res.data.roadPath || pathCoords,
-            navigationPath: res.data.roadPath || pathCoords,
-            stopPathIndexes: res.data.roadStopIndexes || res.data.orderedStops.map((_, index) => index + 1),
+            waypoints: routePlan.waypoints,
+            stopWaypointIndexes: routePlan.stopWaypointIndexes,
             stops: res.data.orderedStops,
             routingSource: res.data.routingSource,
           });

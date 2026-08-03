@@ -56,9 +56,9 @@ async function getRoadPath(locations) {
 
   return {
     roadPath,
-    // The final leg returns to the depot, so all preceding leg endpoints are
-    // delivery stops in the same order as `orderedStops`.
-    roadStopIndexes: path.length > 1 ? legEndIndexes.slice(0, -1) : null,
+    // One entry per requested road leg. The controller maps these leg ends to
+    // delivery stops according to whether a return-to-depot leg was requested.
+    legEndIndexes: path.length > 1 ? legEndIndexes : null,
   };
 }
 

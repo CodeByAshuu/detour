@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { agentsApi, ordersApi, clusterApi, assignApi, routingApi } from '../lib/api';
 import { useSocket } from '../context/SocketContext';
 import MapView from '../components/map/MapView';
+import { createRoutePlan, routeSimulationWaypoints } from '../lib/routePlan';
 import toast from 'react-hot-toast';
 
 // Simple haversine distance in km — mirrors backend's buildGraph.haversine,
@@ -28,6 +29,7 @@ export default function DispatcherDashboard() {
   const [routes, setRoutes] = useState([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationRoutes, setSimulationRoutes] = useState([]);
+  const [simulatedPositions, setSimulatedPositions] = useState({});
   const [hideDeliveredOrders, setHideDeliveredOrders] = useState(false);
 
   // Per-agent simulation progress: { [agentId]: { segIdx, segProgressKm } }
@@ -83,18 +85,17 @@ export default function DispatcherDashboard() {
 
           if (stops.length > 0 && stops.length <= 12) {
             const res = await routingApi.optimizeTSP({ depotLocation, stops });
-            const pathCoords = [depotLocation.coordinates];
-            res.data.orderedStops.forEach((s) => pathCoords.push(s.coordinates));
-            pathCoords.push(depotLocation.coordinates);
+            const routePlan = createRoutePlan({
+              depotCoordinates: depotLocation.coordinates,
+              orderedStops: res.data.orderedStops,
+              roadPath: res.data.roadPath,
+              roadStopIndexes: res.data.roadStopIndexes,
+            });
 
             newRoutes.push({
               agentId,
-              path: pathCoords,
-              displayPath: res.data.roadPath || pathCoords,
-              // The visual line and the moving agent must use the same OSRM
-              // road geometry. `path` remains the logical stop list only.
-              navigationPath: res.data.roadPath || pathCoords,
-              stopPathIndexes: res.data.roadStopIndexes || agentOrders.map((_, index) => index + 1),
+              waypoints: routePlan.waypoints,
+              stopWaypointIndexes: routePlan.stopWaypointIndexes,
               stops: res.data.orderedStops, // aligned with path[1..N]
               distance: res.data.totalDistance,
               routingSource: res.data.routingSource,
@@ -128,8 +129,9 @@ export default function DispatcherDashboard() {
 
     const interval = setInterval(() => {
       simulationRoutes.forEach((route) => {
-        const { agentId, path, navigationPath = path, stopPathIndexes, stops } = route;
-        if (!navigationPath || navigationPath.length < 2) return;
+        const { agentId, stopWaypointIndexes, stops } = route;
+        const waypoints = routeSimulationWaypoints(route);
+        if (!waypoints || waypoints.length < 2) return;
 
         let state = simStateRef.current[agentId];
         if (!state) {
@@ -138,10 +140,10 @@ export default function DispatcherDashboard() {
         }
 
         // Already reached the end of this route (back at depot)
-        if (state.segIdx >= navigationPath.length - 1) return;
+        if (state.segIdx >= waypoints.length - 1) return;
 
-        const from = navigationPath[state.segIdx];
-        const to = navigationPath[state.segIdx + 1];
+        const from = waypoints[state.segIdx];
+        const to = waypoints[state.segIdx + 1];
         const segDistKm = haversineKm(from, to) || 0.0001; // avoid div-by-zero
 
         state.segProgressKm += SIM_STEP_KM;
@@ -150,11 +152,14 @@ export default function DispatcherDashboard() {
           // Arrived at node `to`
           state.segIdx += 1;
           state.segProgressKm = 0;
+          // Render directly as well as broadcasting. The simulation should not
+          // appear to take a straight shortcut when Socket.IO is reconnecting.
+          setSimulatedPositions((previous) => ({ ...previous, [agentId]: to }));
           emitAgentLocation(agentId, to);
 
           // OSRM gives us the geometry index at the end of each delivery leg.
           // For a straight-line fallback these are the logical path indexes.
-          const stopIdx = (stopPathIndexes || []).indexOf(state.segIdx);
+          const stopIdx = (stopWaypointIndexes || []).indexOf(state.segIdx);
           const arrivedStop = stops[stopIdx];
           if (arrivedStop) {
             ordersApi.update(arrivedStop.id, { status: 'DELIVERED' }).catch(() => {});
@@ -163,7 +168,9 @@ export default function DispatcherDashboard() {
           const t = state.segProgressKm / segDistKm;
           const lng = from[0] + (to[0] - from[0]) * t;
           const lat = from[1] + (to[1] - from[1]) * t;
-          emitAgentLocation(agentId, [lng, lat]);
+          const position = [lng, lat];
+          setSimulatedPositions((previous) => ({ ...previous, [agentId]: position }));
+          emitAgentLocation(agentId, position);
         }
       });
     }, SIM_TICK_MS);
@@ -196,11 +203,11 @@ export default function DispatcherDashboard() {
     simStateRef.current = {};
     setSimulationRoutes(routes.map((route) => ({
       ...route,
-      path: [...route.path],
-      navigationPath: [...(route.navigationPath || route.path)],
-      stopPathIndexes: [...(route.stopPathIndexes || [])],
+      waypoints: [...route.waypoints],
+      stopWaypointIndexes: [...(route.stopWaypointIndexes || [])],
       stops: [...route.stops],
     })));
+    setSimulatedPositions(Object.fromEntries(routes.map((route) => [route.agentId, route.waypoints[0]])));
     setIsSimulating(true);
   };
 
@@ -256,6 +263,7 @@ export default function DispatcherDashboard() {
           orders={orders}
           routes={isSimulating ? simulationRoutes : routes}
           agents={agents}
+          livePositions={simulatedPositions}
           hideDeliveredOrders={hideDeliveredOrders}
         />
       </div>

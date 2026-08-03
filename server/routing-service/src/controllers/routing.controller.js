@@ -49,15 +49,21 @@ exports.optimizeTSP = async (req, res) => {
       routingSource = 'straight-line-fallback';
     }
 
-    const result = solveHeldKarpTSP(depotLocation, stops, { maxStops, distanceMatrix });
-    const orderedNodes = [depotLocation, ...result.orderedStops, depotLocation];
+    // The useful route is from the depot through the deliveries. Returning to
+    // the depot should not make a delivery slower or alter the chosen order.
+    const result = solveHeldKarpTSP(depotLocation, stops, {
+      maxStops,
+      distanceMatrix,
+      returnToDepot: false,
+    });
+    const orderedNodes = [depotLocation, ...result.orderedStops];
     let roadPath = null;
     let roadStopIndexes = null;
     if (routingSource === 'road-network') {
       try {
         const roadRoute = await getRoadPath(orderedNodes);
         roadPath = roadRoute?.roadPath || null;
-        roadStopIndexes = roadRoute?.roadStopIndexes || null;
+        roadStopIndexes = roadRoute?.legEndIndexes || null;
       } catch (error) {
         console.warn('Road geometry unavailable; using straight-line map fallback:', error.message);
         routingSource = 'straight-line-fallback';

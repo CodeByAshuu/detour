@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useSocket } from '../../context/SocketContext';
+import { routePolylineCoordinates } from '../../lib/routePlan';
 
 // --- Custom Leaflet Icons ---
 const createDotIcon = (colorHex, pulse = false) => L.divIcon({
@@ -58,6 +59,9 @@ export default function MapView({
   routes = [], 
   agents = [],
   agentIds = null,
+  // The dashboard supplies its own simulation coordinates directly. Socket
+  // updates remain useful for other viewers, but never gate the local marker.
+  livePositions = {},
   hideDeliveredOrders = false,
   depot = DEFAULT_DEPOT 
 }) {
@@ -101,8 +105,14 @@ export default function MapView({
         byId.set(agentId, { ...byId.get(agentId), coordinates: position.coordinates, isLive: true });
       }
     });
+    Object.entries(livePositions).forEach(([agentId, coordinates]) => {
+      if (agentIds && !agentIds.includes(String(agentId))) return;
+      if (Array.isArray(coordinates) && coordinates.length === 2) {
+        byId.set(agentId, { ...byId.get(agentId), coordinates, isLive: true });
+      }
+    });
     return [...byId.entries()];
-  }, [agents, agentPositions, agentIds]);
+  }, [agents, agentPositions, agentIds, livePositions]);
 
   // Dark theme map tiles (CartoDB Dark Matter)
   const mapUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
@@ -152,9 +162,7 @@ export default function MapView({
 
         {/* Routes (Polylines) */}
         {routes.map((route, idx) => {
-          // displayPath may contain road geometry; path remains the small set
-          // of delivery waypoints used by the fleet simulator.
-          const latLngs = (route.displayPath || route.path).map(c => [c[1], c[0]]);
+          const latLngs = routePolylineCoordinates(route).map(c => [c[1], c[0]]);
           return (
             <Polyline 
               key={`route-${idx}`}
