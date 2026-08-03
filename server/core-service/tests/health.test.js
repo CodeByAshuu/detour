@@ -8,4 +8,12 @@ describe('core-service health endpoint', () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: 'ok', service: 'core-service' });
   });
+
+  it('exposes Prometheus-compatible process metrics', async () => {
+    const response = await request(app).get('/metrics');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toContain('text/plain');
+    expect(response.text).toContain('detour_process_uptime_seconds{service="core-service"}');
+  });
 });

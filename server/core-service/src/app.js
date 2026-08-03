@@ -6,14 +6,18 @@ const helmet = require('helmet');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const coreRoutes = require('./routes/core.routes');
+const { observeRequest, metricsHandler } = require('./monitoring/metrics');
 
 const app = express();
 const server = http.createServer(app);
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : true;
 
 // ── Socket.io ──────────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: true,
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
     credentials: true
   },
@@ -52,8 +56,9 @@ io.on('connection', (socket) => {
 
 // ── HTTP Middleware ─────────────────────────────────────────────────────────
 app.use(express.json());
+app.use(observeRequest);
 app.use(cors({
-  origin: true,
+  origin: corsOrigin,
   credentials: true,
 }));
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -63,6 +68,7 @@ app.use('/api/core', coreRoutes);
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', service: 'core-service' });
 });
+app.get('/metrics', metricsHandler);
 
 // ── Start ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5002;
