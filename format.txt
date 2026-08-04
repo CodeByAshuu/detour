@@ -1,0 +1,10 @@
+Format of explanation:
+1.What you have created
+2. Which data structures and algorithms you have used in this.
+3. Resources you have taken help from
+4. Why chosen this project.
+5. Have you pushed this project on GitHub.
+6. What inventions you are planning to do in this current project to make it more effective 
+7. Which is the most difficult and challenging part of the project.
+8. What error came how you debugged those errors?
+9.Step by step process to approach this project.
