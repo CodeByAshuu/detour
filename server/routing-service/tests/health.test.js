@@ -16,4 +16,10 @@ describe('routing-service health endpoint', () => {
     expect(response.headers['content-type']).toContain('text/plain');
     expect(response.text).toContain('detour_process_uptime_seconds{service="routing-service"}');
   });
+
+  it('allows the deployed Vercel frontend through CORS', async () => {
+    const response = await request(app).get('/health').set('Origin', 'https://detourhq.vercel.app');
+
+    expect(response.headers['access-control-allow-origin']).toBe('https://detourhq.vercel.app');
+  });
 });

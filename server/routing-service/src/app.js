@@ -7,9 +7,11 @@ const { startWorker } = require('./queue/worker');
 const { observeRequest, metricsHandler } = require('./monitoring/metrics');
 
 const app = express();
-const corsOrigin = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : true;
+const DEFAULT_CORS_ORIGINS = ['https://detourhq.vercel.app', 'http://localhost:5173', 'http://localhost'];
+const corsOrigin = [...new Set([
+  ...DEFAULT_CORS_ORIGINS,
+  ...(process.env.CORS_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean),
+])];
 app.use(express.json());
 app.use(observeRequest);
 

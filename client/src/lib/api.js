@@ -1,8 +1,5 @@
 import axios from 'axios';
-
-const AUTH_URL    = import.meta.env.VITE_AUTH_URL    || 'http://localhost:5001';
-const CORE_URL    = import.meta.env.VITE_CORE_URL    || 'http://localhost:5002';
-const ROUTING_URL = import.meta.env.VITE_ROUTING_URL || 'http://localhost:5003';
+import { AUTH_URL, CORE_URL, ROUTING_URL } from './serviceUrls';
 
 /** Returns Authorization header from localStorage token */
 function authHeaders() {

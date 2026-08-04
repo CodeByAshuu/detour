@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:5001';
+import { authApi } from '../lib/api';
 
 export default function Login() {
   const [mode, setMode] = useState('login');
@@ -31,13 +29,13 @@ export default function Login() {
 
     try {
       if (mode === 'register') {
-        await axios.post(`${AUTH_URL}/api/auth/register`, { email, password, role });
+        await authApi.register({ email, password, role });
         setSuccess('Account created. Sign in to open your workspace.');
         setMode('login');
         return;
       }
 
-      const response = await axios.post(`${AUTH_URL}/api/auth/login`, { email, password });
+      const response = await authApi.login({ email, password });
       login(response.data.token, response.data.role, response.data.userId);
       navigate(response.data.role === 'admin' ? '/admin' : response.data.role === 'dispatcher' ? '/dispatcher' : '/agent');
     } catch (requestError) {

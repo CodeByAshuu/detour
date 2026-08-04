@@ -10,9 +10,11 @@ const { observeRequest, metricsHandler } = require('./monitoring/metrics');
 
 const app = express();
 const server = http.createServer(app);
-const corsOrigin = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : true;
+const DEFAULT_CORS_ORIGINS = ['https://detourhq.vercel.app', 'http://localhost:5173', 'http://localhost'];
+const corsOrigin = [...new Set([
+  ...DEFAULT_CORS_ORIGINS,
+  ...(process.env.CORS_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean),
+])];
 
 // ── Socket.io ──────────────────────────────────────────────────────────────
 const io = new Server(server, {

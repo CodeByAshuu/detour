@@ -6,7 +6,12 @@
 
 ## 1. Project Description
 
-Detour is a full-stack logistics management platform that solves a real operational problem faced by every delivery/courier company: **given a set of orders and a fleet of delivery agents, how do you assign orders to agents and compute the most efficient delivery routes — in real time, at scale?**
+Detour is a full-stack logistics management platform that solves a real operational 
+problem faced by every delivery/courier company: 
+
+**given a set of orders and a fleet of delivery agents, 
+how do you assign orders to agents and compute the most efficient delivery routes — 
+in real time, at scale?**
 
 Unlike a typical CRUD "delivery tracking app," Detour implements the actual optimization logic itself: agent-order assignment, shortest-path routing, multi-stop route sequencing, and dynamic zone clustering, all built from scratch on top of graph theory and classical algorithms rather than delegated to a third-party black box.
 
@@ -122,21 +127,19 @@ The platform has three user roles:
 
 ## 5. Tech Stack
 
-| Layer | Technology | Notes |
-|---|---|---|
-| Frontend | React + Vite, TailwindCSS, Leaflet.js, Redux Toolkit or Zustand | Leaflet + OpenStreetMap tiles — free |
-| Backend | Node.js, Express.js | REST APIs, 3 services (auth/core/routing) |
-| Real-time | Socket.io | Live agent tracking |
-| Database | MongoDB (Atlas free tier) | Geospatial indexes (`2dsphere`) for location queries |
-| Cache/Queue | Redis + BullMQ | Async job queue for heavy route computations |
-| Auth | JWT + bcrypt | Role-based access control |
-| Testing | Jest, Supertest (backend), React Testing Library (frontend) | Integrated into CI |
-| Containerization | Docker, Docker Compose | Separate containers per service |
-| CI/CD | GitHub Actions | Lint → Test → Build → Dockerize → Push → Deploy |
-| Optional 2nd pipeline | Jenkins | Staging → Production promotion (shows dual-tool familiarity) |
-| Deployment | Render / Railway (backend + DB), Vercel (frontend) | Free tiers |
-| Monitoring | Prometheus + Grafana (basic), or simple health-check + Winston logging | Optional but strong add |
-| Reverse Proxy | Nginx | Container, routes traffic between services |
+| Layer    | Technology                                             | Notes                                     |
+|----------|--------------------------------------------------------|-------------------------------------------|
+| Frontend | React + Vite, TailwindCSS, Leaflet.js, Redux Toolkit   | Leaflet + OpenStreetMap tiles — free |
+| Backend  | Node.js, Express.js                                    | REST APIs, 3 services (auth/core/routing) |
+| Real-time| Socket.io                                              | Live agent tracking |
+| Database | MongoDB (Atlas free tier)                              | Geospatial indexes (`2dsphere`) for location queries |
+| Cache/Queue | Redis + BullMQ                                      | Async job queue for heavy route computations |
+| Auth     | JWT + bcrypt                                           | Role-based access control |
+| Testing  | Jest, Supertest (backend),                             | Integrated into CI |
+| Containerization | Docker, Docker Compose                         | Separate containers per service |
+| CI/CD    | GitHub Actions                                         | Lint → Test → Build → Dockerize → Push → Deploy |
+| Deployment | Render / Railway (backend + DB), Vercel (frontend)   | Free tiers |
+| Reverse Proxy | Nginx                                             | Container, routes traffic between services |
 
 **All free / open-source** — no paid tools required, as discussed earlier.
 

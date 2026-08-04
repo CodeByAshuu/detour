@@ -1,8 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
-
-const CORE_URL = import.meta.env.VITE_CORE_URL || 'http://localhost:5002';
+import { CORE_URL } from '../lib/serviceUrls';
 
 const SocketContext = createContext(null);
 

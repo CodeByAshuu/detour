@@ -34,6 +34,24 @@ VITE_CORE_URL=https://<core-host>
 VITE_ROUTING_URL=https://<routing-host>
 ```
 
+For the current deployment, set these in **Vercel → Settings → Environment Variables** for Production (and Preview if you use previews):
+
+```text
+VITE_AUTH_URL=https://detour-auth.onrender.com
+VITE_CORE_URL=https://detour-core.onrender.com
+VITE_ROUTING_URL=https://detour-routing.onrender.com
+```
+
+Vite substitutes these values during the Vercel build, so redeploy the frontend after saving them.
+
+Set this value in **each** Render backend service:
+
+```text
+CORS_ORIGIN=https://detourhq.vercel.app
+```
+
+Set the **same** strong `JWT_SECRET` value in auth-service and core-service. Do not set it in the frontend or routing-service.
+
 The core URL must support Socket.IO polling and WebSocket upgrades at `/socket.io/`.
 
 ## Release sequence

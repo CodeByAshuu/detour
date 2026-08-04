@@ -260,3 +260,17 @@ To keep the DSA showcase honest, avoid these even though they'd make life easier
 - Google Maps SDK or any paid routing API
 
 Everything else (Express, Mongoose, Socket.io, JWT, BullMQ, Leaflet) is legitimate infrastructure — using libraries for plumbing is normal; the algorithms are what you're being evaluated on.
+
+| Tool / Practice           |             Used?             | Purpose in Detour                                                                                      |
+| ------------------------- | :---------------------------: | ------------------------------------------------------------------------------------------------------ |
+| **Docker**                |               ✅               | Containerize each microservice (`auth`, `core`, `routing`, `client`, `nginx`).                         |
+| **Docker Compose**        |               ✅               | Run the complete local stack (MongoDB, Redis, Nginx, services, frontend) with one command.             |
+| **GitHub Actions**        |               ✅               | CI pipeline for linting, testing, building Docker images, and deployment automation.                   |
+| **Nginx**                 |               ✅               | Reverse proxy and API gateway in front of the microservices.                                           |
+| **MongoDB Atlas**         |               ✅               | Cloud-hosted database service. While not a DevOps tool, it is part of your deployment infrastructure.  |
+| **Redis**                 |               ✅               | Caching and message broker for BullMQ jobs.                                                            |
+| **BullMQ**                |               ✅               | Background job queue for CPU-intensive route computations.                                             |
+| **Render / Railway**      |               ✅               | Backend deployment platforms.                                                                          |
+| **Vercel**                |               ✅               | Frontend deployment.                                                                                   |
+| **Jest + Supertest**      |               ✅               | Automated backend testing in CI.                                                                       |
+| **React Testing Library** |               ✅               | Frontend testing integrated into CI.                                                                   |
